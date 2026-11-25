@@ -32,6 +32,12 @@ enum RecordingState: Equatable, Sendable {
     }
 }
 
+struct FollowedRouteSession: Sendable, Equatable {
+    let id: UUID
+    let name: String
+    let waypoints: [RouteWaypoint]
+}
+
 @MainActor
 @Observable
 final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
@@ -61,6 +67,8 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
     private(set) var latestAccuracyMeters: Double?
     private(set) var rejectedFixCount: Int = 0
     private(set) var lastSplitCompleted: ActivitySplit?
+    private(set) var activeFollowedRoute: FollowedRouteSession?
+    private(set) var routeFollowStatus: RouteFollowStatus?
 
     // Optional external sensor hooks (populated in Phase 5)
     var currentHeartRateProvider: (@MainActor () -> Double?)?
@@ -70,6 +78,7 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
     private var activeSessionID: UUID?
     private var unpersistedPoints: [TrackPoint] = []
     private var lastFlushDate: Date = .distantPast
+    private var lastOffRouteAlertDate: Date = .distantPast
     private var pendingAutoStartAfterAuth = false
     private weak var activeSettings: AppSettingsStore?
 
@@ -101,6 +110,21 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
     func setActivityType(_ type: ActivityType) {
         guard state == .idle else { return }
         selectedActivityType = type
+    }
+
+    func selectRouteToFollow(_ route: SDSavedRoute) {
+        let wps = route.decodedWaypoints()
+        guard wps.count >= 2 else { return }
+        activeFollowedRoute = FollowedRouteSession(id: route.id, name: route.name, waypoints: wps)
+        routeFollowStatus = nil
+        lastOffRouteAlertDate = .distantPast
+        DiagnosticsLogger.shared.log(.recording, "Selected route to follow: \(route.name) (\(wps.count) pts)")
+    }
+
+    func clearFollowedRoute() {
+        activeFollowedRoute = nil
+        routeFollowStatus = nil
+        lastOffRouteAlertDate = .distantPast
     }
 
     func checkForPendingRecovery() {
@@ -537,8 +561,35 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
         }
 
         syncTelemetryFromEngine()
+        evaluateFollowedRoute(at: location, now: now)
         if unpersistedPoints.count >= 10 || now.timeIntervalSince(lastFlushDate) >= 10.0 {
             flushPendingPoints(force: false)
+        }
+    }
+
+    private func evaluateFollowedRoute(at location: CLLocation, now: Date) {
+        guard let followed = activeFollowedRoute else {
+            routeFollowStatus = nil
+            return
+        }
+        let status = RouteNavigationEngine.evaluate(
+            latitude: location.coordinate.latitude,
+            longitude: location.coordinate.longitude,
+            waypoints: followed.waypoints,
+            offRouteThresholdMeters: 50.0
+        )
+        routeFollowStatus = status
+
+        if status.isOffRoute && now.timeIntervalSince(lastOffRouteAlertDate) >= 30.0 {
+            lastOffRouteAlertDate = now
+            let unit = activeSettings?.unitSystem ?? .metric
+            cues.offRouteAlert(
+                distanceMeters: status.distanceOffRouteMeters,
+                unitSystem: unit,
+                audioEnabled: activeSettings?.audioCuesEnabled ?? true,
+                hapticsEnabled: activeSettings?.hapticsEnabled ?? true
+            )
+            DiagnosticsLogger.shared.log(.location, "Off-route alert: \(Int(status.distanceOffRouteMeters))m from \(followed.name)")
         }
     }
 
@@ -631,6 +682,8 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
         elevationLossMeters = 0
         rejectedFixCount = 0
         lastSplitCompleted = nil
+        routeFollowStatus = nil
+        lastOffRouteAlertDate = .distantPast
     }
 
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {

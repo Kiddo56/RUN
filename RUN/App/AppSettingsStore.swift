@@ -99,4 +99,15 @@ final class AppSettingsStore {
 
         self.lastBackupDate = userDefaults.object(forKey: Keys.lastBackupDate) as? Date
     }
+
+    func daysSinceLastBackup(now: Date = Date()) -> Int? {
+        guard let lastBackupDate else { return nil }
+        return max(0, Int(now.timeIntervalSince(lastBackupDate) / 86_400.0))
+    }
+
+    func needsBackupReminder(activityCount: Int, now: Date = Date()) -> Bool {
+        guard activityCount > 0 else { return false }
+        guard let lastBackupDate else { return true }
+        return now.timeIntervalSince(lastBackupDate) >= 5.0 * 86_400.0
+    }
 }

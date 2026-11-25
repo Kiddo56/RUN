@@ -24,6 +24,7 @@ struct RecordView: View {
                         VStack(spacing: 14) {
                             topHeaderBar
                             permissionBanner
+                            followRouteBanner
                             liveMapCard
                             telemetrySection
                         }
@@ -222,10 +223,62 @@ struct RecordView: View {
     }
 
     @ViewBuilder
+    private var followRouteBanner: some View {
+        if let followed = recorder.activeFollowedRoute {
+            let isOffRoute = recorder.routeFollowStatus?.isOffRoute == true
+            let bannerColor = isOffRoute ? RunTheme.coral : RunTheme.violet
+            let detailText: String = {
+                guard let status = recorder.routeFollowStatus else {
+                    return "Route ready (\(followed.waypoints.count) pts)"
+                }
+                if status.isOffRoute {
+                    return "Off route by \(RunFormatter.elevation(meters: status.distanceOffRouteMeters, unit: settings.unitSystem))"
+                }
+                return "\(RunFormatter.distance(meters: status.remainingDistanceMeters, unit: settings.unitSystem)) remaining"
+            }()
+
+            HStack(spacing: 10) {
+                Image(systemName: isOffRoute ? "exclamationmark.triangle.fill" : "point.topleft.down.curvedto.point.bottomright.up")
+                    .foregroundStyle(bannerColor)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(followed.name)
+                        .font(.caption.weight(.bold))
+                        .lineLimit(1)
+                    Text(detailText)
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(isOffRoute ? RunTheme.coral : .secondary)
+                }
+
+                Spacer()
+
+                Button {
+                    recorder.clearFollowedRoute()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityLabel("Clear followed route")
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(bannerColor.opacity(0.14))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    @ViewBuilder
     private var liveMapCard: some View {
         ZStack(alignment: .bottomTrailing) {
             Map(position: $cameraPosition) {
                 UserAnnotation()
+                if let followed = recorder.activeFollowedRoute, followed.waypoints.count >= 2 {
+                    let guideCoords = followed.waypoints.map {
+                        CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+                    }
+                    MapPolyline(coordinates: guideCoords)
+                        .stroke(RunTheme.violet.opacity(0.75), style: StrokeStyle(lineWidth: 5, dash: [8, 6]))
+                }
                 if let first = recorder.routeCoordinates.first {
                     Marker("Start", systemImage: "flag.fill", coordinate: first)
                         .tint(RunTheme.emerald)

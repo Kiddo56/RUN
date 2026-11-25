@@ -22,6 +22,8 @@ struct ActivityDetailView: View {
     @State private var showingTrimSheet = false
     @State private var showingMergeSheet = false
     @State private var showingShareSheet = false
+    @State private var exportedGPXURL: URL?
+    @State private var showingGPXExportSheet = false
     @State private var showingDeleteConfirm = false
 
     private var selectedSample: TrackChartSample? {
@@ -85,6 +87,16 @@ struct ActivityDetailView: View {
                     .disabled(points.isEmpty)
 
                     Button {
+                        if let url = try? DataTransferService.exportSingleGPX(activity: activity) {
+                            exportedGPXURL = url
+                            showingGPXExportSheet = true
+                        }
+                    } label: {
+                        Label("Export GPX 1.1", systemImage: "doc.text")
+                    }
+                    .disabled(points.isEmpty)
+
+                    Button {
                         showingEditSheet = true
                     } label: {
                         Label("Edit Details", systemImage: "pencil")
@@ -131,6 +143,40 @@ struct ActivityDetailView: View {
         }
         .sheet(isPresented: $showingShareSheet) {
             ShareCardSheet(activity: activity, points: points)
+        }
+        .sheet(isPresented: $showingGPXExportSheet) {
+            NavigationStack {
+                VStack(spacing: 18) {
+                    Image(systemName: "doc.badge.arrow.up")
+                        .font(.system(size: 48))
+                        .foregroundStyle(RunTheme.electricTeal)
+                    Text("GPX 1.1 Ready")
+                        .font(.title3.weight(.bold))
+                    Text("\(activity.title) (\(points.count) points)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    if let exportedGPXURL {
+                        ShareLink(item: exportedGPXURL) {
+                            Label("Save / Share .gpx File", systemImage: "square.and.arrow.up")
+                                .font(.headline.weight(.bold))
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
+                                .background(RunTheme.electricTeal)
+                                .foregroundStyle(RunTheme.midnightSlate)
+                                .clipShape(Capsule())
+                        }
+                    }
+                }
+                .padding()
+                .navigationTitle("Export GPX")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") { showingGPXExportSheet = false }
+                    }
+                }
+            }
+            .presentationDetents([.medium])
         }
         .alert("Delete Activity?", isPresented: $showingDeleteConfirm) {
             Button("Delete", role: .destructive) {

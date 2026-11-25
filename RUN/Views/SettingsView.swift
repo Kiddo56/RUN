@@ -1,9 +1,13 @@
+import SwiftData
 import SwiftUI
 import TrackerCore
 
 struct SettingsView: View {
     @Environment(AppSettingsStore.self) private var settings
     @Environment(DiagnosticsLogger.self) private var diagnostics
+    @Query private var activities: [SDActivity]
+
+    @State private var navigateToBackup = false
 
     private let buildInfo = AppBuildInfo.current()
 
@@ -12,6 +16,30 @@ struct SettingsView: View {
 
         NavigationStack {
             Form {
+                if settings.needsBackupReminder(activityCount: activities.count) {
+                    Section {
+                        BackupReminderBanner(daysSinceBackup: settings.daysSinceLastBackup()) {
+                            navigateToBackup = true
+                        }
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                    }
+                }
+
+                Section("Backup, Import & Export") {
+                    NavigationLink(destination: DataAndBackupView()) {
+                        HStack {
+                            Label("Backup, GPX & CSV", systemImage: "externaldrive.fill")
+                            Spacer()
+                            if let last = settings.lastBackupDate {
+                                Text(last.formatted(date: .abbreviated, time: .omitted))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+
                 Section {
                     Picker("Units", selection: $bindableSettings.unitSystem) {
                         ForEach(UnitSystem.allCases) { unit in
@@ -101,6 +129,9 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .navigationDestination(isPresented: $navigateToBackup) {
+                DataAndBackupView()
+            }
         }
     }
 }

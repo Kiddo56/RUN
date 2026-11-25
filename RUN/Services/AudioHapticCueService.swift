@@ -81,6 +81,17 @@ final class AudioHapticCueService: NSObject, AVSpeechSynthesizerDelegate {
         speak(msg)
     }
 
+    func offRouteAlert(distanceMeters: Double, unitSystem: UnitSystem, audioEnabled: Bool, hapticsEnabled: Bool) {
+        if hapticsEnabled {
+            notifier.prepare()
+            notifier.notificationOccurred(.warning)
+        }
+        if audioEnabled {
+            let formatted = RunFormatter.elevation(meters: distanceMeters, unit: unitSystem)
+            speak("Off route by \(formatted).")
+        }
+    }
+
     private func speak(_ text: String) {
         do {
             let session = AVAudioSession.sharedInstance()

@@ -266,4 +266,76 @@ final class RUNAppTests: XCTestCase {
         )
         XCTAssertEqual(progress, 5_000, accuracy: 0.1)
     }
+
+    func testFullBackupRestoreAndGPXImportRoundTrip() throws {
+        let tempRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("run_backup_\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        let store = TrackFileStore(baseDirectory: tempRoot)
+        let suiteName = "run.backup.tests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let settings = AppSettingsStore(userDefaults: defaults)
+        let schema = Schema([
+            SDActivity.self,
+            SDGear.self,
+            SDGoal.self,
+            SDSavedRoute.self,
+            SDSection.self
+        ])
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = ModelContext(container)
+
+        let t0 = Date(timeIntervalSince1970: 1_700_000_000)
+        let pts = [
+            TrackPoint(timestamp: t0, latitude: 37.7700, longitude: -122.4100, altitude: 15),
+            TrackPoint(timestamp: t0.addingTimeInterval(30), latitude: 37.7710, longitude: -122.4100, altitude: 20),
+            TrackPoint(timestamp: t0.addingTimeInterval(60), latitude: 37.7720, longitude: -122.4100, altitude: 24)
+        ]
+        let gpxData = GPXCodec.exportActivity(title: "Imported GPX Run", activityType: .run, startDate: t0, points: pts)
+        let importedAct = try DataTransferService.importGPXAsActivity(
+            data: gpxData,
+            fallbackName: "Fallback",
+            modelContext: context,
+            settings: settings,
+            fileStore: store
+        )
+        XCTAssertEqual(importedAct.title, "Imported GPX Run")
+        XCTAssertEqual(importedAct.pointCount, 3)
+
+        let importedRoute = try DataTransferService.importGPXAsRoute(
+            data: gpxData,
+            fallbackName: "Route Fallback",
+            modelContext: context
+        )
+        XCTAssertEqual(importedRoute.decodedWaypoints().count, 3)
+
+        XCTAssertTrue(settings.needsBackupReminder(activityCount: 1))
+        let backupURL = try DataTransferService.exportFullBackup(
+            modelContext: context,
+            settings: settings,
+            appVersion: "1.0.0",
+            fileStore: store
+        )
+        defer { try? FileManager.default.removeItem(at: backupURL) }
+        XCTAssertFalse(settings.needsBackupReminder(activityCount: 1))
+
+        let backupBytes = try Data(contentsOf: backupURL)
+        let restoreSummary = try DataTransferService.restoreFullBackup(
+            data: backupBytes,
+            modelContext: context,
+            settings: settings,
+            replaceExisting: true,
+            fileStore: store
+        )
+        XCTAssertEqual(restoreSummary.activitiesRestored, 1)
+        XCTAssertEqual(restoreSummary.routesRestored, 1)
+
+        let restoredActivities = try context.fetch(FetchDescriptor<SDActivity>())
+        XCTAssertEqual(restoredActivities.count, 1)
+        XCTAssertEqual(try store.loadTrackPoints(fileName: restoredActivities[0].trackFileName).count, 3)
+    }
 }

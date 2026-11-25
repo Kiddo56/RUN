@@ -16,7 +16,7 @@
 - **Diagnostics:** Log lifecycle, auth, location, recording, recovery, backup, and errors to `DiagnosticsLogger.shared` (rolling 2,000 entries, exportable as `.txt`).
 
 ## Current State
-- **Active Phase:** Phase 2 Complete -> Starting Phase 3 (Stats, Goals, Gear, PRs, Effort, Share Card)
-- **Last Green CI:** Run #7 (`45682801797`), commit `d50f6d2`, runner `xcode-27` (Xcode 27.1 / Swift 6.4), `TrackerCoreTests` 20/20 passed, `RUNTests` 6/6 passed, `dist/RUN.ipa` (1,025,575 bytes) downloaded locally.
-- **CI Budget:** 7 / 80 runs used.
-- **Next Step:** Implement Phase 3 (Stats Dashboard, streaks, trends, sliding-window PRs, Goals with progress rings & local notifications, Gear auto mileage & retirement alerts, Fitness/Fatigue trend, and MKMapSnapshotter Share Card with optional 200 m privacy trim).
+- **Active Phase:** Phase 3 Complete -> Starting Phase 4 (Import/Export, Backup/Restore, Routes & Follow Route)
+- **Last Green CI:** Run #8 (`45686362203`), commit `0aa10d5`, runner `xcode-27` (Xcode 27.1 / Swift 6.4), `TrackerCoreTests` 23/23 passed, `RUNTests` 7/7 passed, `dist/RUN.ipa` (1,200,656 bytes) downloaded locally.
+- **CI Budget:** 8 / 80 runs used.
+- **Next Step:** Implement Phase 4 (GPX 1.1 single & bulk export, CSV export, full-fidelity versioned Backup & Restore with >5-day banner, Foundation XMLParser GPX activity/route importer, tap-waypoint Route Builder, and Follow Route mode with off-route alert).

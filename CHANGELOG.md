@@ -1,5 +1,12 @@
 # CHANGELOG.md
 
+## Phase 4 — Import/Export, Backup/Restore & Routes
+- Added `GPXCodec` (GPX 1.1 XML activity & route export/import via `XMLParser`), `PureZipWriter` (zero-dependency PKZIP bulk archive), `CSVExporter` (RFC 4180), `BackupCodec` (versioned schema `v1`), and `RouteNavigationEngine` (off-route distance & remaining distance) in `TrackerCore`.
+- Built `DataTransferService` and `DataAndBackupView` for full-fidelity backup/restore, bulk GPX ZIP export, CSV export, and GPX activity import.
+- Added `BackupReminderBanner` warning when the last backup is >5 days old (protecting data against 7-day free sideload signing expiry).
+- Added single-activity GPX 1.1 export on `ActivityDetailView`.
+- Built `RouteBuilderView` (tap map waypoints), `RoutesListView` (saved routes, GPX route import/export), and Follow Route mode on `RecordView` / `LocationRecordingService` with dashed guide polyline, remaining distance, and spoken/haptic off-route alerts.
+
 ## Phase 3 — Stats Dashboard, PRs, Goals, Gear & Share Card
 - Added `StatsAggregator` (weekly/monthly/yearly/all-time totals, daily/weekly streaks, volume trend buckets, 42d/7d fitness-fatigue EMA trend, goal progress), `PersonalRecordScanner` (sliding-window fastest 1K/1Mi/5K/10K/Half/Marathon, longest distance, biggest climb), and `TrackPrivacyTrimmer` (200 m endpoint hide) with unit tests in `TrackerCore`.
 - Built `InsightsDashboardView`, `PersonalRecordsView`, `GoalsView` (progress rings + local `UNUserNotificationCenter` reminders via `NotificationService`), and `GearView` (mileage tracking, default gear auto-assignment on finish, retirement alerts).

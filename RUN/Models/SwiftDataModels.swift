@@ -221,6 +221,18 @@ final class SDSavedRoute {
         self.source = source
         self.waypointsData = waypointsData
     }
+
+    func decodedWaypoints() -> [RouteWaypoint] {
+        guard !waypointsData.isEmpty,
+              let decoded = try? JSONDecoder().decode([RouteWaypoint].self, from: waypointsData) else {
+            return []
+        }
+        return decoded
+    }
+
+    func updateWaypoints(_ waypoints: [RouteWaypoint]) {
+        self.waypointsData = (try? JSONEncoder().encode(waypoints)) ?? Data()
+    }
 }
 
 @Model

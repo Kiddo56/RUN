@@ -19,6 +19,7 @@ struct HistoryListView: View {
     @State private var displayMode: HistoryDisplayMode = .timeline
     @State private var selectedTypeFilter: ActivityType? = nil
     @State private var searchText: String = ""
+    @State private var showingBackupSheet = false
 
     private var filteredActivities: [SDActivity] {
         activities.filter { activity in
@@ -38,6 +39,14 @@ struct HistoryListView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                if settings.needsBackupReminder(activityCount: activities.count) {
+                    BackupReminderBanner(daysSinceBackup: settings.daysSinceLastBackup()) {
+                        showingBackupSheet = true
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                }
+
                 Picker("History View", selection: $displayMode) {
                     ForEach(HistoryDisplayMode.allCases) { mode in
                         Text(mode.rawValue).tag(mode)
@@ -59,6 +68,16 @@ struct HistoryListView: View {
             }
             .navigationTitle("History")
             .searchable(text: $searchText, prompt: "Search activities")
+            .sheet(isPresented: $showingBackupSheet) {
+                NavigationStack {
+                    DataAndBackupView()
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Done") { showingBackupSheet = false }
+                            }
+                        }
+                }
+            }
         }
     }
 
