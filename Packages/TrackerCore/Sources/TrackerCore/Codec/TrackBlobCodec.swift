@@ -10,7 +10,7 @@ public enum TrackBlobError: Error, Sendable, Equatable {
 public enum TrackBlobCodec {
     private static let magic: [UInt8] = [0x52, 0x54, 0x52, 0x4B] // "RTRK"
     private static let version: UInt16 = 1
-    private static let recordByteCount = 45 // 8+8+8 + 4+4+4+4+4+4 + 1
+    private static let recordByteCount = 49 // 8+8+8 + 4+4+4+4+4+4 + 1
 
     public static func encode(_ points: [TrackPoint]) throws -> Data {
         var raw = Data(capacity: 10 + points.count * recordByteCount)
