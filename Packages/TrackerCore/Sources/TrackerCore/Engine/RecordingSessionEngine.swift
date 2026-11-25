@@ -239,7 +239,7 @@ public enum TrackAnalyzer {
                 let d = GeoMath.distanceMeters(from: p0, to: p1)
                 let dt = max(0, p1.timestamp.timeIntervalSince(p0.timestamp))
                 let segSpeed = dt > 0 ? (d / dt) : 0
-                let effectiveSpeed = (p1.speed.isFinite && p1.speed >= 0) ? p1.speed : segSpeed
+                let effectiveSpeed = (p1.speed.isFinite && p1.speed > 0) ? p1.speed : segSpeed
                 _ = movEngine.advance(to: p1.timestamp, speedMPS: effectiveSpeed)
 
                 if !p1.isPaused && !movEngine.isAutoPaused {
