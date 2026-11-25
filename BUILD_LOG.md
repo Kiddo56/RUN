@@ -1,6 +1,6 @@
 # BUILD_LOG.md — CI Run Ledger
 
-**Budget:** Soft limit 80 runs (`9 / 80` used).
+**Budget:** Soft limit 80 runs (`10 / 80` used).
 
 | Run # | GitHub Run ID | Phase | Runner | Commit | Result | Notes |
 |------:|--------------:|-------|--------|--------|--------|-------|
@@ -13,3 +13,4 @@
 | 7 | `45682801797` | Phase 2 | `xcode-27` (`iPhone 17e` iOS 27.2) | `d50f6d2` | **Success** | `TrackerCoreTests` 20/20 passed, `RUNTests` 6/6 passed, `dist/RUN.ipa` (1,025,575 bytes) verified (`com.kiddo56.run`, v1.0.0, SHA `d50f6d2`). Duration 14m37s. |
 | 8 | `45686362203` | Phase 3 | `xcode-27` (`iPhone 17e` iOS 27.2) | `0aa10d5` | **Success** | `TrackerCoreTests` 23/23 passed, `RUNTests` 7/7 passed, `dist/RUN.ipa` (1,200,656 bytes) verified (`com.kiddo56.run`, v1.0.0, SHA `0aa10d5`). Duration 18m33s. |
 | 9 | `45690675198` | Phase 4 | `xcode-27` (`iPhone 17e` iOS 27.2) | `e25cde3` | **Success** | `TrackerCoreTests` 28/28 passed, `RUNTests` 8/8 passed, `dist/RUN.ipa` (1,377,246 bytes) verified (`com.kiddo56.run`, v1.0.0, SHA `e25cde3`). Duration 15m21s. |
+| 10 | `45695169866` | Phase 5 | `xcode-27` (`iPhone 17e` iOS 27.2) | `0530879` | **Success** | `TrackerCoreTests` 31/31 passed, `RUNTests` 9/9 passed, `dist/RUN.ipa` (1,500,029 bytes) verified (`com.kiddo56.run`, v1.0.0 build 10, SHA `0530879`, `MinimumOSVersion` 17.0). Duration 15m25s. |

@@ -16,7 +16,7 @@
 - **Diagnostics:** Log lifecycle, auth, location, recording, recovery, backup, and errors to `DiagnosticsLogger.shared` (rolling 2,000 entries, exportable as `.txt`).
 
 ## Current State
-- **Active Phase:** Phase 5 (Feature-Flagged Extras) & Documentation Complete -> Verifying Final CI Run #10 & Preparing Step D / H2 Install Handoff
-- **Last Green CI:** Run #9 (`45690675198`), commit `e25cde3`, runner `xcode-27` (Xcode 27.1 / Swift 6.4), `TrackerCoreTests` 28/28 passed, `RUNTests` 8/8 passed, `dist/RUN.ipa` (1,377,246 bytes).
-- **CI Budget:** 9 / 80 runs used (pushing Run #10).
-- **Next Step:** Watch Phase 5 CI Run #10, download final `dist/RUN.ipa`, install Sideloadly + download Apple desktop iTunes/iCloud installers, and present H2 click-by-click install handoff.
+- **Active Phase:** Phases 0–5 Complete (Ready for Sideloadly H2 Handoff)
+- **Last Green CI:** Run #10 (`45695169866`), commit `0530879`, runner `xcode-27` (Xcode 27.1 / Swift 6.4), `TrackerCoreTests` 31/31 passed, `RUNTests` 9/9 passed, `dist/RUN.ipa` (1,500,029 bytes, `com.kiddo56.run`, v1.0.0 build 10).
+- **CI Budget:** 10 / 80 runs used.
+- **Next Step:** Deliver final report & H2 click-by-click install instructions, wait for user `"done"`, then provide `TEST_CHECKLIST.md` highlights and bug-report workflow.
