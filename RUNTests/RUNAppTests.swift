@@ -338,4 +338,90 @@ final class RUNAppTests: XCTestCase {
         XCTAssertEqual(restoredActivities.count, 1)
         XCTAssertEqual(try store.loadTrackPoints(fileName: restoredActivities[0].trackFileName).count, 3)
     }
+
+    func testPhase5SectionPersistenceAndSensorDefaults() throws {
+        let schema = Schema([
+            SDActivity.self,
+            SDGear.self,
+            SDGoal.self,
+            SDSavedRoute.self,
+            SDSection.self
+        ])
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = ModelContext(container)
+
+        let bearing = GeoMath.bearingDegrees(
+            lat1: 37.7700,
+            lon1: -122.4100,
+            lat2: 37.7745,
+            lon2: -122.4100
+        )
+        let dist = GeoMath.distanceMeters(
+            lat1: 37.7700,
+            lon1: -122.4100,
+            lat2: 37.7745,
+            lon2: -122.4100
+        )
+        let section = SDSection(
+            name: "Park Climb",
+            activityTypeRaw: ActivityType.run.rawValue,
+            startLatitude: 37.7700,
+            startLongitude: -122.4100,
+            endLatitude: 37.7745,
+            endLongitude: -122.4100,
+            expectedBearing: bearing,
+            distanceMeters: dist,
+            corridorMeters: 35.0
+        )
+        context.insert(section)
+        try context.save()
+
+        let fetchedSections = try context.fetch(FetchDescriptor<SDSection>())
+        XCTAssertEqual(fetchedSections.count, 1)
+        XCTAssertEqual(fetchedSections[0].name, "Park Climb")
+
+        let t0 = Date(timeIntervalSince1970: 1_700_000_000)
+        var track: [TrackPoint] = []
+        for i in 0...30 {
+            let frac = Double(i) / 30.0
+            track.append(
+                TrackPoint(
+                    timestamp: t0.addingTimeInterval(Double(i) * 5.0),
+                    latitude: 37.7700 + frac * 0.0045,
+                    longitude: -122.4100,
+                    altitude: 15.0 + frac * 10.0
+                )
+            )
+        }
+        let spec = SectionSpec(
+            id: section.id,
+            name: section.name,
+            activityType: .run,
+            startLatitude: section.startLatitude,
+            startLongitude: section.startLongitude,
+            endLatitude: section.endLatitude,
+            endLongitude: section.endLongitude,
+            expectedBearing: section.expectedBearing,
+            distanceMeters: section.distanceMeters,
+            corridorMeters: section.corridorMeters
+        )
+        let attempts = SectionMatcher.findAttempts(
+            section: spec,
+            activityID: UUID(),
+            activityTitle: "Evening Run",
+            activityType: .run,
+            points: track
+        )
+        XCTAssertEqual(attempts.count, 1)
+
+        // Ensure Phase 5 hardware services start strictly idle when feature flags are OFF.
+        let hrMonitor = HeartRateMonitorService()
+        XCTAssertEqual(hrMonitor.connectionState, .idle)
+        XCTAssertNil(hrMonitor.currentBPM)
+
+        let barometer = BarometerService()
+        XCTAssertFalse(barometer.isRunning)
+        XCTAssertNil(barometer.fusedAltitudeMeters)
+    }
 }

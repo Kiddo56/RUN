@@ -1,5 +1,17 @@
 # CHANGELOG.md
 
+## v1.0.0 — Phase 5: Optional Feature-Flagged Extras & Documentation Release
+- Added pure-Swift Phase 5 engines and unit tests in `TrackerCore`:
+  - `BLEHeartRateParser` for Bluetooth SIG Heart Rate Measurement (`0x2A37`, 8-bit & 16-bit BPM payloads).
+  - `SectionMatcher` for directional corridor matching and fastest-first attempt ranking across a user's own tracks.
+  - `HeatmapBuilder` for downsampled single-user personal track aggregation and map bounds calculation.
+- Implemented gated iOS Phase 5 capabilities (all controlled by `FeatureFlags`, default OFF):
+  - `HeartRateMonitorService` (`CoreBluetooth` `0x180D`) with strictly lazy initialization (never requests Bluetooth permission while disabled) plus `RecordView` live BPM metric card and strap scan/connect sheet.
+  - `BarometerService` (`CoreMotion` `CMAltimeter`) fusing relative barometric pressure delta onto an initial GPS altitude baseline during active sessions.
+  - `PersonalSectionsView` (`SectionBuilderSheet` with Start/End map gate pins + corridor radius, and `SectionDetailView` scanning saved `.trk` blobs off-main-thread).
+  - `PersonalHeatmapView` overlaying all personal recorded tracks with activity-type filtering and Fit All bounds zoom.
+- Completed user-facing documentation: `INSTALL_ON_IPHONE.md`, `TEST_CHECKLIST.md`, `THIRD_PARTY_NOTICES.md`, updated `README.md` and `KNOWN_ISSUES.md`.
+
 ## Phase 4 — Import/Export, Backup/Restore & Routes
 - Added `GPXCodec` (GPX 1.1 XML activity & route export/import via `XMLParser`), `PureZipWriter` (zero-dependency PKZIP bulk archive), `CSVExporter` (RFC 4180), `BackupCodec` (versioned schema `v1`), and `RouteNavigationEngine` (off-route distance & remaining distance) in `TrackerCore`.
 - Built `DataTransferService` and `DataAndBackupView` for full-fidelity backup/restore, bulk GPX ZIP export, CSV export, and GPX activity import.

@@ -73,6 +73,9 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
     // Optional external sensor hooks (populated in Phase 5)
     var currentHeartRateProvider: (@MainActor () -> Double?)?
     var currentBarometricAltitudeProvider: (@MainActor () -> Double?)?
+    var onSessionStarted: (@MainActor () -> Void)?
+    var onSessionEnded: (@MainActor () -> Void)?
+    var onGPSAltitudeAvailable: (@MainActor (_ altitude: Double, _ verticalAccuracy: Double) -> Void)?
 
     private var engine: RecordingSessionEngine?
     private var activeSessionID: UUID?
@@ -461,6 +464,7 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
         cues.countdownGo(hapticsEnabled: settings.hapticsEnabled)
         cues.announceStart(type: selectedActivityType, audioEnabled: settings.audioCuesEnabled)
 
+        onSessionStarted?()
         startLocationUpdatesStream()
         startTickerLoop()
     }
@@ -510,6 +514,7 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
     private func handleIncomingLocation(_ location: CLLocation) {
         guard state.isActiveSession, var currentEngine = engine else { return }
         let now = Date()
+        onGPSAltitudeAvailable?(location.altitude, location.verticalAccuracy)
         let baroAlt = currentBarometricAltitudeProvider?()
         let pt = TrackPoint(
             timestamp: location.timestamp,
@@ -664,6 +669,7 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
         backgroundSession?.invalidate()
         backgroundSession = nil
 
+        onSessionEnded?()
         fileStore.clearJournal()
         engine = nil
         activeSessionID = nil

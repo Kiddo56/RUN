@@ -16,7 +16,7 @@
 - **Diagnostics:** Log lifecycle, auth, location, recording, recovery, backup, and errors to `DiagnosticsLogger.shared` (rolling 2,000 entries, exportable as `.txt`).
 
 ## Current State
-- **Active Phase:** Phase 3 Complete -> Starting Phase 4 (Import/Export, Backup/Restore, Routes & Follow Route)
-- **Last Green CI:** Run #8 (`45686362203`), commit `0aa10d5`, runner `xcode-27` (Xcode 27.1 / Swift 6.4), `TrackerCoreTests` 23/23 passed, `RUNTests` 7/7 passed, `dist/RUN.ipa` (1,200,656 bytes) downloaded locally.
-- **CI Budget:** 8 / 80 runs used.
-- **Next Step:** Implement Phase 4 (GPX 1.1 single & bulk export, CSV export, full-fidelity versioned Backup & Restore with >5-day banner, Foundation XMLParser GPX activity/route importer, tap-waypoint Route Builder, and Follow Route mode with off-route alert).
+- **Active Phase:** Phase 5 (Feature-Flagged Extras) & Documentation Complete -> Verifying Final CI Run #10 & Preparing Step D / H2 Install Handoff
+- **Last Green CI:** Run #9 (`45690675198`), commit `e25cde3`, runner `xcode-27` (Xcode 27.1 / Swift 6.4), `TrackerCoreTests` 28/28 passed, `RUNTests` 8/8 passed, `dist/RUN.ipa` (1,377,246 bytes).
+- **CI Budget:** 9 / 80 runs used (pushing Run #10).
+- **Next Step:** Watch Phase 5 CI Run #10, download final `dist/RUN.ipa`, install Sideloadly + download Apple desktop iTunes/iCloud installers, and present H2 click-by-click install handoff.

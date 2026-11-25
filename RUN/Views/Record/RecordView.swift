@@ -8,11 +8,14 @@ struct RecordView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppSettingsStore.self) private var settings
     @Environment(LocationRecordingService.self) private var recorder
+    @Environment(HeartRateMonitorService.self) private var heartRateMonitor
+    @Environment(BarometerService.self) private var barometer
 
     @State private var cameraPosition: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var followUser = true
     @State private var showingFinishSheet = false
     @State private var showingDiscardAlert = false
+    @State private var showingHeartRateSheet = false
     @State private var finishTitle = ""
     @State private var finishNotes = ""
 
@@ -25,6 +28,7 @@ struct RecordView: View {
                             topHeaderBar
                             permissionBanner
                             followRouteBanner
+                            heartRateSensorBar
                             liveMapCard
                             telemetrySection
                         }
@@ -48,6 +52,9 @@ struct RecordView: View {
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showingFinishSheet) {
                 finishActivitySheet
+            }
+            .sheet(isPresented: $showingHeartRateSheet) {
+                heartRateSheet
             }
             .sheet(item: recoverySheetBinding) { item in
                 recoveryPromptSheet(pending: item.session)
@@ -268,6 +275,48 @@ struct RecordView: View {
     }
 
     @ViewBuilder
+    private var heartRateSensorBar: some View {
+        if settings.featureFlags.bleHeartRate {
+            HStack(spacing: 10) {
+                Image(systemName: "heart.fill")
+                    .foregroundStyle(heartRateMonitor.connectionState == .connected ? RunTheme.coral : .secondary)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    if let name = heartRateMonitor.connectedDeviceName,
+                       heartRateMonitor.connectionState == .connected {
+                        if let bpm = heartRateMonitor.currentBPM {
+                            Text("\(name) · \(Int(bpm.rounded())) bpm")
+                                .font(.caption.weight(.bold).monospacedDigit())
+                        } else {
+                            Text("\(name) · Waiting for BPM")
+                                .font(.caption.weight(.semibold))
+                        }
+                    } else {
+                        Text("Heart-Rate Strap: \(heartRateMonitor.connectionState.displayLabel)")
+                            .font(.caption.weight(.semibold))
+                    }
+                    Text("Bluetooth 0x180D sensor")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Button("Sensors") {
+                    showingHeartRateSheet = true
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.bordered)
+                .tint(RunTheme.coral)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(RunTheme.coral.opacity(0.11))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    @ViewBuilder
     private var liveMapCard: some View {
         ZStack(alignment: .bottomTrailing) {
             Map(position: $cameraPosition) {
@@ -378,10 +427,23 @@ struct RecordView: View {
                     accent: .secondary,
                     large: false
                 )
+                let elevTitle = (settings.featureFlags.barometricAltimeter && barometer.isReceivingUpdates)
+                    ? "ELEV GAIN (BARO)"
+                    : "ELEV GAIN"
                 metricCard(
-                    title: "ELEV GAIN",
+                    title: elevTitle,
                     value: RunFormatter.elevation(meters: recorder.elevationGainMeters, unit: unit),
                     accent: RunTheme.violet,
+                    large: false
+                )
+            }
+
+            if settings.featureFlags.bleHeartRate {
+                let hrText = heartRateMonitor.currentBPM.map { "\(Int($0.rounded())) bpm" } ?? "-- bpm"
+                metricCard(
+                    title: "HEART RATE (BLE)",
+                    value: hrText,
+                    accent: RunTheme.coral,
                     large: false
                 )
             }
@@ -613,6 +675,95 @@ struct RecordView: View {
             .navigationTitle("Session Recovery")
             .navigationBarTitleDisplayMode(.inline)
             .interactiveDismissDisabled()
+        }
+    }
+
+    @ViewBuilder
+    private var heartRateSheet: some View {
+        NavigationStack {
+            List {
+                Section("Connection") {
+                    LabeledContent("Status", value: heartRateMonitor.connectionState.displayLabel)
+                    if let name = heartRateMonitor.connectedDeviceName {
+                        LabeledContent("Device", value: name)
+                    }
+                    if let bpm = heartRateMonitor.currentBPM {
+                        LabeledContent("Live Heart Rate", value: "\(Int(bpm.rounded())) bpm")
+                    }
+
+                    if heartRateMonitor.connectionState == .scanning {
+                        Button("Stop Scanning") {
+                            heartRateMonitor.stopScanning()
+                        }
+                    } else {
+                        Button("Scan for 0x180D Straps") {
+                            heartRateMonitor.startScanning()
+                        }
+                    }
+
+                    if heartRateMonitor.connectionState == .connected || heartRateMonitor.connectionState == .connecting {
+                        Button("Disconnect", role: .destructive) {
+                            heartRateMonitor.disconnect()
+                        }
+                    }
+                }
+
+                if heartRateMonitor.connectionState == .unauthorized {
+                    Section {
+                        Text("Bluetooth access was denied. Enable Bluetooth for RUN in iPhone Settings to pair a chest or arm strap.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Button("Open iPhone Settings") {
+                            recorder.openAppSystemSettings()
+                        }
+                    }
+                } else if heartRateMonitor.connectionState == .bluetoothOff {
+                    Section {
+                        Text("Bluetooth is turned off. Turn on Bluetooth in Control Center or iPhone Settings.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("Discovered Straps") {
+                    if heartRateMonitor.discoveredSensors.isEmpty {
+                        Text(heartRateMonitor.connectionState == .scanning ? "Listening for standard Bluetooth Heart Rate Service (0x180D) straps..." : "Tap Scan to discover nearby straps.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(heartRateMonitor.discoveredSensors) { sensor in
+                            Button {
+                                heartRateMonitor.connect(sensorID: sensor.id)
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(sensor.name)
+                                            .font(.body.weight(.semibold))
+                                        Text("\(sensor.rssi) dBm")
+                                            .font(.caption2.monospacedDigit())
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Text("Connect")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RunTheme.electricTeal)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Heart-Rate Strap")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        heartRateMonitor.stopScanning()
+                        showingHeartRateSheet = false
+                    }
+                }
+            }
         }
     }
 }

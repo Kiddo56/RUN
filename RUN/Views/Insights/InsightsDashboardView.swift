@@ -296,6 +296,30 @@ struct InsightsDashboardView: View {
                     badge: retiringGearCount > 0 ? "\(retiringGearCount) due" : nil
                 )
             }
+
+            if settings.featureFlags.personalSections {
+                NavigationLink(destination: PersonalSectionsView()) {
+                    toolRow(
+                        title: "Personal Sections",
+                        subtitle: "Match & rank your own timed segments",
+                        icon: "flag.checkered.2.crossed",
+                        tint: RunTheme.amber,
+                        badge: nil
+                    )
+                }
+            }
+
+            if settings.featureFlags.personalHeatmap {
+                NavigationLink(destination: PersonalHeatmapView()) {
+                    toolRow(
+                        title: "Personal Heatmap",
+                        subtitle: "Overlay all of your own recorded routes",
+                        icon: "flame.fill",
+                        tint: RunTheme.coral,
+                        badge: nil
+                    )
+                }
+            }
         }
     }
 
