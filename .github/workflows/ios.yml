@@ -1,0 +1,169 @@
+name: iOS Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: xcode-27
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Inspect toolchain and build metadata
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+          echo "Commit SHA: ${GITHUB_SHA::7}"
+          echo "Run Number: ${GITHUB_RUN_NUMBER}"
+
+      - name: Cache SwiftPM and DerivedData
+        uses: actions/cache@v4
+        with:
+          path: |
+            Packages/TrackerCore/.build
+            build/DerivedData
+          key: ${{ runner.os }}-xcode27-${{ hashFiles('project.yml', 'Packages/TrackerCore/Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode27-
+
+      - name: Install XcodeGen
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Generate Xcode project
+        run: |
+          python3 scripts/generate_icon.py
+          xcodegen generate --spec project.yml
+
+      - name: Run TrackerCore SwiftPM tests
+        run: swift test --package-path Packages/TrackerCore
+
+      - name: Discover and boot iOS Simulator
+        run: |
+          python3 - <<'PY' > sim_env.txt
+          import json
+          import subprocess
+          import sys
+
+          raw = subprocess.check_output(
+              ["xcrun", "simctl", "list", "devices", "available", "-j"],
+              text=True,
+          )
+          data = json.loads(raw)
+          candidates = []
+          for runtime, devices in data.get("devices", {}).items():
+              if "iOS" not in runtime:
+                  continue
+              for dev in devices:
+                  if not dev.get("isAvailable", False):
+                      continue
+                  name = dev.get("name", "")
+                  if "iPhone" in name:
+                      candidates.append((runtime, name, dev["udid"], dev.get("state", "")))
+
+          if not candidates:
+              print("No available iPhone simulators found!", file=sys.stderr)
+              sys.exit(1)
+
+          candidates.sort(key=lambda item: (item[0], "16" in item[1] or "17" in item[1], item[1]), reverse=True)
+          runtime, name, udid, state = candidates[0]
+          print(f"SIM_RUNTIME={runtime}")
+          print(f"SIM_NAME={name}")
+          print(f"SIM_UDID={udid}")
+          PY
+          cat sim_env.txt
+          cat sim_env.txt >> "$GITHUB_ENV"
+          SIM_UDID="$(grep '^SIM_UDID=' sim_env.txt | cut -d= -f2-)"
+          xcrun simctl boot "$SIM_UDID" || true
+          xcrun simctl bootstatus "$SIM_UDID" -b
+
+      - name: Run RUNTests on iOS Simulator
+        run: |
+          xcodebuild test \
+            -project RUN.xcodeproj \
+            -scheme RUN \
+            -destination "platform=iOS Simulator,id=${SIM_UDID}" \
+            -derivedDataPath build/DerivedData \
+            -only-testing:RUNTests \
+            CODE_SIGNING_ALLOWED=YES
+
+      - name: Run RUNUITests smoke test (best-effort)
+        id: uitests
+        continue-on-error: true
+        run: |
+          rm -rf build/UITestResults.xcresult build/screenshots
+          mkdir -p build/screenshots
+          xcodebuild test \
+            -project RUN.xcodeproj \
+            -scheme RUN \
+            -destination "platform=iOS Simulator,id=${SIM_UDID}" \
+            -derivedDataPath build/DerivedData \
+            -resultBundlePath build/UITestResults.xcresult \
+            -only-testing:RUNUITests \
+            CODE_SIGNING_ALLOWED=YES
+
+      - name: Extract simulator screenshots
+        if: always()
+        run: |
+          mkdir -p build/screenshots
+          if [ -d build/UITestResults.xcresult ]; then
+            xcrun xcresulttool export attachments --path build/UITestResults.xcresult --output-path build/screenshots || true
+          fi
+          if [ -n "${SIM_UDID:-}" ]; then
+            xcrun simctl io "${SIM_UDID}" screenshot build/screenshots/sim_final.png || true
+          fi
+          ls -la build/screenshots || true
+
+      - name: Archive unsigned Release build
+        run: |
+          xcodebuild archive \
+            -project RUN.xcodeproj \
+            -scheme RUN \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath build/RUN.xcarchive \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            MARKETING_VERSION="1.0.0" \
+            CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" \
+            RUN_GIT_COMMIT_SHA="${GITHUB_SHA::7}"
+
+      - name: Package unsigned IPA
+        run: |
+          rm -rf Payload dist
+          mkdir -p Payload dist
+          cp -R build/RUN.xcarchive/Products/Applications/RUN.app Payload/RUN.app
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" Payload/RUN.app/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Payload/RUN.app/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Payload/RUN.app/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :RunGitCommitSHA" Payload/RUN.app/Info.plist
+          zip -qr dist/RUN.ipa Payload
+          ls -lh dist/RUN.ipa
+
+      - name: Upload RUN.ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RUN-IPA
+          path: dist/RUN.ipa
+          if-no-files-found: error
+
+      - name: Upload UI screenshots artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RUN-Screenshots
+          path: build/screenshots
+          if-no-files-found: ignore

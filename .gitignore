@@ -1,0 +1,15 @@
+*.xcodeproj
+*.xcworkspace
+build/
+DerivedData/
+dist/
+Payload/
+.DS_Store
+.swiftpm/
+Packages/TrackerCore/.build/
+RUN/Info.plist
+*.ipa
+*.xcarchive
+*.xcresult
+xcuserdata/
+sim_env.txt

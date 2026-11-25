@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="RUN" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Phase 0 Placeholder Fixture</name>
+    <time>2026-01-01T08:00:00Z</time>
+  </metadata>
+  <trk>
+    <name>Placeholder Track</name>
+    <type>run</type>
+    <trkseg>
+      <trkpt lat="37.774900" lon="-122.419400">
+        <ele>15.0</ele>
+        <time>2026-01-01T08:00:00Z</time>
+      </trkpt>
+      <trkpt lat="37.775800" lon="-122.419400">
+        <ele>16.0</ele>
+        <time>2026-01-01T08:00:30Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>
