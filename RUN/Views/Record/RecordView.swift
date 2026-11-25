@@ -337,12 +337,13 @@ struct RecordView: View {
 
     @ViewBuilder
     private func metricCard(title: String, value: String, accent: Color, large: Bool) -> some View {
+        let baseFont: Font = large ? .title : .title3
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text(value)
-                .font((large ? Font.title : Font.title3).weight(.bold).monospacedDigit())
+                .font(baseFont.weight(.bold).monospacedDigit())
                 .foregroundStyle(accent)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)

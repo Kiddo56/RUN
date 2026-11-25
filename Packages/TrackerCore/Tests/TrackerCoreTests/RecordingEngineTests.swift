@@ -132,19 +132,24 @@ final class RecordingEngineTests: XCTestCase {
 
     func testTrackBlobCodecRoundTripAndJournalResilience() throws {
         let t0 = Date(timeIntervalSince1970: 1_700_000_000)
-        let points = (0..<120).map { i in
-            TrackPoint(
-                timestamp: t0.addingTimeInterval(Double(i) * 2.0),
-                latitude: 37.77 + Double(i) * 0.0001,
-                longitude: -122.41 - Double(i) * 0.0001,
-                altitude: 15.0 + Double(i) * 0.2,
+        var points: [TrackPoint] = []
+        points.reserveCapacity(120)
+        for i in 0..<120 {
+            let offset = Double(i)
+            let hr: Double? = (i % 2 == 0) ? 155.0 : nil
+            let pt = TrackPoint(
+                timestamp: t0.addingTimeInterval(offset * 2.0),
+                latitude: 37.77 + offset * 0.0001,
+                longitude: -122.41 - offset * 0.0001,
+                altitude: 15.0 + offset * 0.2,
                 horizontalAccuracy: 5.5,
                 verticalAccuracy: 8.0,
                 speed: 3.2,
                 course: 45.0,
-                heartRate: i % 2 == 0 ? 155.0 : nil,
+                heartRate: hr,
                 isPaused: i == 50
             )
+            points.append(pt)
         }
 
         let encoded = try TrackBlobCodec.encode(points)
