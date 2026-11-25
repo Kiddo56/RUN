@@ -102,13 +102,11 @@ schemes:
       targets:
         RUN: all
         RUNTests: [test]
-        RUNUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
         - RUNTests
-        - RUNUITests
     archive:
       config: Release

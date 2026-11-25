@@ -146,4 +146,50 @@ final class RUNAppTests: XCTestCase {
         XCTAssertEqual(fetched[0].decodedSplits().count, 2)
         XCTAssertEqual(fetched[0].decodedPreviewCoordinates().count, 2)
     }
+
+    func testTrimAndMergePersistenceRoundTrip() throws {
+        let tempRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("run_edit_\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        let store = TrackFileStore(baseDirectory: tempRoot)
+        let t0 = Date(timeIntervalSince1970: 1_700_000_000)
+        var pointsA: [TrackPoint] = []
+        for i in 0..<20 {
+            pointsA.append(
+                TrackPoint(
+                    timestamp: t0.addingTimeInterval(Double(i) * 10),
+                    latitude: 37.7700 + Double(i) * 0.0003,
+                    longitude: -122.4100,
+                    altitude: 20 + Double(i)
+                )
+            )
+        }
+        try store.saveTrackPoints(pointsA, fileName: "a.trk")
+        let reloadedA = try store.loadTrackPoints(fileName: "a.trk")
+
+        let trimmed = try XCTUnwrap(
+            TrackEditor.trim(points: reloadedA, startIndex: 2, endIndex: 17, activityType: .run, unitSystem: .metric)
+        )
+        XCTAssertEqual(trimmed.points.count, 16)
+        try store.saveTrackPoints(trimmed.points, fileName: "a.trk")
+        XCTAssertEqual(try store.loadTrackPoints(fileName: "a.trk").count, 16)
+
+        var pointsB: [TrackPoint] = []
+        let t1 = t0.addingTimeInterval(1200)
+        for i in 0..<10 {
+            pointsB.append(
+                TrackPoint(
+                    timestamp: t1.addingTimeInterval(Double(i) * 10),
+                    latitude: 37.7800 + Double(i) * 0.0003,
+                    longitude: -122.4100,
+                    altitude: 30
+                )
+            )
+        }
+        let merged = try XCTUnwrap(
+            TrackEditor.merge(first: trimmed.points, second: pointsB, activityType: .run, unitSystem: .metric)
+        )
+        XCTAssertGreaterThan(merged.summary.distanceMeters, trimmed.summary.distanceMeters)
+    }
 }

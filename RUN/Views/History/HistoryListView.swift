@@ -2,6 +2,13 @@ import SwiftData
 import SwiftUI
 import TrackerCore
 
+private enum HistoryDisplayMode: String, CaseIterable, Identifiable {
+    case timeline = "Timeline"
+    case calendar = "Calendar"
+
+    var id: String { rawValue }
+}
+
 struct HistoryListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppSettingsStore.self) private var settings
@@ -9,32 +16,121 @@ struct HistoryListView: View {
     @Query(sort: \SDActivity.startDate, order: .reverse)
     private var activities: [SDActivity]
 
+    @State private var displayMode: HistoryDisplayMode = .timeline
+    @State private var selectedTypeFilter: ActivityType? = nil
+    @State private var searchText: String = ""
+
+    private var filteredActivities: [SDActivity] {
+        activities.filter { activity in
+            if let selectedTypeFilter, activity.activityType != selectedTypeFilter {
+                return false
+            }
+            let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if !q.isEmpty {
+                return activity.title.lowercased().contains(q)
+                    || activity.notes.lowercased().contains(q)
+                    || activity.activityType.displayName.lowercased().contains(q)
+            }
+            return true
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            Group {
-                if activities.isEmpty {
-                    ContentUnavailableView(
-                        "No Activities Yet",
-                        systemImage: "figure.run",
-                        description: Text("Recorded runs, rides, walks, and hikes will appear here.")
-                    )
-                } else {
-                    List {
-                        ForEach(activities) { activity in
-                            activityRow(activity)
-                        }
-                        .onDelete(perform: deleteActivities)
+            VStack(spacing: 0) {
+                Picker("History View", selection: $displayMode) {
+                    ForEach(HistoryDisplayMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
                     }
-                    .listStyle(.insetGrouped)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+
+                if displayMode == .timeline {
+                    typeFilterStrip
+                    timelineContent
+                } else {
+                    ActivityCalendarView(
+                        activities: filteredActivities,
+                        unitSystem: settings.unitSystem
+                    )
                 }
             }
             .navigationTitle("History")
+            .searchable(text: $searchText, prompt: "Search activities")
         }
     }
 
     @ViewBuilder
-    private func activityRow(_ activity: SDActivity) -> some View {
-        let unit = settings.unitSystem
+    private var typeFilterStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                filterPill(title: "All", type: nil)
+                ForEach(ActivityType.allCases) { type in
+                    filterPill(title: type.displayName, type: type)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+        }
+    }
+
+    @ViewBuilder
+    private func filterPill(title: String, type: ActivityType?) -> some View {
+        let isSelected = selectedTypeFilter == type
+        Button(title) {
+            selectedTypeFilter = type
+        }
+        .font(.caption.weight(.semibold))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(isSelected ? RunTheme.electricTeal : Color.secondary.opacity(0.15))
+        .foregroundStyle(isSelected ? RunTheme.midnightSlate : Color.primary)
+        .clipShape(Capsule())
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var timelineContent: some View {
+        if filteredActivities.isEmpty {
+            ContentUnavailableView(
+                activities.isEmpty ? "No Activities Yet" : "No Matching Activities",
+                systemImage: "figure.run",
+                description: Text(
+                    activities.isEmpty
+                        ? "Recorded runs, rides, walks, and hikes will appear here."
+                        : "Try clearing your search or filter selection."
+                )
+            )
+        } else {
+            List {
+                ForEach(filteredActivities) { activity in
+                    NavigationLink(destination: ActivityDetailView(activity: activity)) {
+                        ActivityRowCard(activity: activity, unitSystem: settings.unitSystem)
+                    }
+                }
+                .onDelete(perform: deleteActivities)
+            }
+            .listStyle(.insetGrouped)
+        }
+    }
+
+    private func deleteActivities(at offsets: IndexSet) {
+        let itemsToDelete = offsets.map { filteredActivities[$0] }
+        for activity in itemsToDelete {
+            TrackFileStore.shared.deleteTrackFile(fileName: activity.trackFileName)
+            modelContext.delete(activity)
+        }
+        try? modelContext.save()
+    }
+}
+
+struct ActivityRowCard: View {
+    let activity: SDActivity
+    let unitSystem: UnitSystem
+
+    var body: some View {
         let coords = activity.decodedPreviewCoordinates()
 
         HStack(spacing: 12) {
@@ -64,17 +160,17 @@ struct HistoryListView: View {
                     .foregroundStyle(.secondary)
 
                 HStack(spacing: 12) {
-                    Text(RunFormatter.distance(meters: activity.distanceMeters, unit: unit))
+                    Text(RunFormatter.distance(meters: activity.distanceMeters, unit: unitSystem))
                         .font(.subheadline.weight(.bold).monospacedDigit())
                     Text(RunFormatter.duration(seconds: activity.movingTime))
                         .font(.subheadline.monospacedDigit())
                         .foregroundStyle(.secondary)
                     if activity.activityType.prefersSpeedOverPace {
-                        Text(RunFormatter.speed(metersPerSecond: activity.averageSpeedMPS, unit: unit))
+                        Text(RunFormatter.speed(metersPerSecond: activity.averageSpeedMPS, unit: unitSystem))
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                     } else {
-                        Text(RunFormatter.pace(secondsPerMeter: activity.averagePaceSecondsPerMeter, unit: unit))
+                        Text(RunFormatter.pace(secondsPerMeter: activity.averagePaceSecondsPerMeter, unit: unitSystem))
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
@@ -82,15 +178,6 @@ struct HistoryListView: View {
             }
         }
         .padding(.vertical, 4)
-    }
-
-    private func deleteActivities(at offsets: IndexSet) {
-        for index in offsets {
-            let activity = activities[index]
-            TrackFileStore.shared.deleteTrackFile(fileName: activity.trackFileName)
-            modelContext.delete(activity)
-        }
-        try? modelContext.save()
     }
 }
 

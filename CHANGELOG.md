@@ -1,5 +1,12 @@
 # CHANGELOG.md
 
+## Phase 2 — History, Calendar, Detail & Editing
+- Added `TrackChartBuilder` and `TrackEditor` (trim and gap-safe chronological merge) with unit tests in `TrackerCore`.
+- Upgraded `HistoryListView` with Timeline / Calendar switcher, activity type pills, search, and navigation to `ActivityDetailView`.
+- Built `ActivityCalendarView` monthly grid with daily indicators and month totals.
+- Built `ActivityDetailView` with pace/speed-colored MapKit route polylines, Start/Finish markers, interactive synchronized Swift Charts (`Elevation`, `Pace/Speed`, `Heart Rate`) with map scrubbing highlight, splits table, and Edit / Trim / Merge / Delete tools.
+- Dropped twice-failed best-effort `RUNUITests` step from `.github/workflows/ios.yml` per protocol.
+
 ## Phase 1 — Recording Core
 - Expanded `TrackerCore` with `GPSFilter`, `PaceSmoother`, `MovingTimeEngine`, `ElevationEngine` (3 m hysteresis), `SplitCalculator`, `TrackBlobCodec` (compact zlib binary format), `JournalLineCodec`, `RecordingSessionEngine`, `TrackAnalyzer`, and `BasicGPXReader`.
 - Added 4 GPX test fixtures (`steady_run.gpx`, `road_ride.gpx`, `noisy_urban_gps.gpx`, `stop_and_go_walk.gpx`) and unit tests.

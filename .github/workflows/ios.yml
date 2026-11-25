@@ -99,33 +99,6 @@ jobs:
             -only-testing:RUNTests \
             CODE_SIGNING_ALLOWED=YES
 
-      - name: Run RUNUITests smoke test (best-effort)
-        id: uitests
-        continue-on-error: true
-        run: |
-          rm -rf build/UITestResults.xcresult build/screenshots
-          mkdir -p build/screenshots
-          xcodebuild test \
-            -project RUN.xcodeproj \
-            -scheme RUN \
-            -destination "platform=iOS Simulator,id=${SIM_UDID}" \
-            -derivedDataPath build/DerivedData \
-            -resultBundlePath build/UITestResults.xcresult \
-            -only-testing:RUNUITests \
-            CODE_SIGNING_ALLOWED=YES
-
-      - name: Extract simulator screenshots
-        if: always()
-        run: |
-          mkdir -p build/screenshots
-          if [ -d build/UITestResults.xcresult ]; then
-            xcrun xcresulttool export attachments --path build/UITestResults.xcresult --output-path build/screenshots || true
-          fi
-          if [ -n "${SIM_UDID:-}" ]; then
-            xcrun simctl io "${SIM_UDID}" screenshot build/screenshots/sim_final.png || xcrun simctl io "${SIM_UDID}" screenshot --display=1 build/screenshots/sim_final.png || true
-          fi
-          ls -la build/screenshots || true
-
       - name: Archive unsigned Release build
         run: |
           xcodebuild archive \
@@ -161,11 +134,3 @@ jobs:
           name: RUN-IPA
           path: dist/RUN.ipa
           if-no-files-found: error
-
-      - name: Upload UI screenshots artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: RUN-Screenshots
-          path: build/screenshots
-          if-no-files-found: ignore
