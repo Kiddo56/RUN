@@ -48,8 +48,8 @@ struct RecordView: View {
             .sheet(isPresented: $showingFinishSheet) {
                 finishActivitySheet
             }
-            .sheet(item: recoverySheetBinding) { pending in
-                recoveryPromptSheet(pending: pending)
+            .sheet(item: recoverySheetBinding) { item in
+                recoveryPromptSheet(pending: item.session)
             }
             .alert("Discard Activity?", isPresented: $showingDiscardAlert) {
                 Button("Discard", role: .destructive) {

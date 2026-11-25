@@ -411,7 +411,7 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
                     }
                 }
             } catch {
-                guard let self, !Task.isCancelled else { return }
+                guard self != nil, !Task.isCancelled else { return }
                 DiagnosticsLogger.shared.log(.error, "CLLocationUpdate stream error: \(error.localizedDescription)")
             }
         }
