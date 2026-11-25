@@ -16,5 +16,7 @@
 - **Diagnostics:** Log lifecycle, auth, location, recording, recovery, backup, and errors to `DiagnosticsLogger.shared` (rolling 2,000 entries, exportable as `.txt`).
 
 ## Current State
-- **Active Phase:** Phase 0 (Pipeline First)
-- **Next Step:** Verify Phase 0 CI run is green and download `dist/RUN.ipa`, then advance to Phase 1 (Recording Core).
+- **Active Phase:** Phase 0 Complete -> Starting Phase 1 (Recording Core)
+- **Last Green CI:** Run #1 (`45669288522`), commit `2e17847`, runner `xcode-27` (Xcode 27.1 / Swift 6.4), `dist/RUN.ipa` (663,038 bytes) downloaded locally.
+- **Note for Phase 1 CI:** Avoid selecting dual-display `iPhone Duo` simulator in `.github/workflows/ios.yml` so standard iPhone tab bar & `simctl io screenshot` work cleanly on `RUNUITests` (if `RUNUITests` still fails on second try, drop UI tests step per protocol).
+- **Next Step:** Implement Phase 1 (Recording Core: pure `TrackerCore` GPS filtering, pace smoothing, moving time, elevation gain, splits, track binary codec + 4 GPX fixtures + unit tests; `LocationRecordingService` with `CLLocationUpdate.liveUpdates()` + `CLBackgroundActivitySession`, 3-2-1 countdown, live map & metrics, auto-pause, speech/haptic cues, 10s crash-recovery journal).

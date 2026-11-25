@@ -61,6 +61,8 @@ targets:
           - bluetooth-central
         NSLocationWhenInUseUsageDescription: "RUN uses your location while tracking activities to record distance, pace, elevation, and your route."
         NSLocationAlwaysAndWhenInUseUsageDescription: "RUN can continue tracking your activity when the screen is locked or the app is in the background."
+        NSLocationTemporaryUsageDescriptionDictionary:
+          WorkoutTracking: "RUN needs full location precision to plot your route and compute accurate pace and distance."
         NSBluetoothAlwaysUsageDescription: "RUN optionally connects to Bluetooth heart-rate straps when enabled in Settings."
         NSMotionUsageDescription: "RUN optionally uses the barometer to refine elevation gain when enabled in Settings."
         UIFileSharingEnabled: true

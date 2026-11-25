@@ -6,15 +6,20 @@ final class RUNSmokeUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    func testLaunchMapSettingsAndDiagnosticsSmoke() throws {
+    func testLaunchRecordHistorySettingsAndDiagnosticsSmoke() throws {
         let app = XCUIApplication()
         app.launch()
 
-        let mapTab = app.tabBars.buttons["Map"].firstMatch
-        XCTAssertTrue(mapTab.waitForExistence(timeout: 15), "Map tab button should appear")
-        captureScreenshot(named: "01_map_home", app: app)
+        let startButton = app.buttons["record.startButton"].firstMatch
+        XCTAssertTrue(startButton.waitForExistence(timeout: 15), "Record start button should appear")
+        captureScreenshot(named: "01_record", app: app)
 
-        let settingsTab = app.tabBars.buttons["Settings"].firstMatch
+        let historyTab = app.buttons["History"].firstMatch
+        XCTAssertTrue(historyTab.waitForExistence(timeout: 5), "History tab button should appear")
+        historyTab.tap()
+        captureScreenshot(named: "02_history", app: app)
+
+        let settingsTab = app.buttons["Settings"].firstMatch
         XCTAssertTrue(settingsTab.waitForExistence(timeout: 5), "Settings tab button should appear")
         settingsTab.tap()
 
@@ -22,7 +27,7 @@ final class RUNSmokeUITests: XCTestCase {
         XCTAssertTrue(versionRow.waitForExistence(timeout: 5), "Settings version row should appear")
         let shaRow = app.descendants(matching: .any)["settings.commitSHA"]
         XCTAssertTrue(shaRow.waitForExistence(timeout: 5), "Settings commit SHA row should appear")
-        captureScreenshot(named: "02_settings", app: app)
+        captureScreenshot(named: "03_settings", app: app)
 
         let diagnosticsLink = app.descendants(matching: .any)["settings.diagnosticsLink"]
         XCTAssertTrue(diagnosticsLink.waitForExistence(timeout: 5), "Diagnostics link should appear")
@@ -31,7 +36,7 @@ final class RUNSmokeUITests: XCTestCase {
         let addEventButton = app.buttons["diagnostics.addEventButton"]
         XCTAssertTrue(addEventButton.waitForExistence(timeout: 5), "Diagnostics view should load")
         addEventButton.tap()
-        captureScreenshot(named: "03_diagnostics", app: app)
+        captureScreenshot(named: "04_diagnostics", app: app)
     }
 
     private func captureScreenshot(named name: String, app: XCUIApplication) {

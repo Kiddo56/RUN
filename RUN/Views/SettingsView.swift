@@ -26,6 +26,37 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("Auto-Pause When Stopped", isOn: $bindableSettings.autoPauseEnabled)
+                    Toggle("Spoken Split & Status Cues", isOn: $bindableSettings.audioCuesEnabled)
+                    Toggle("Haptic Feedback", isOn: $bindableSettings.hapticsEnabled)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("GPS Accuracy Filter")
+                            Spacer()
+                            Text("≤ \(Int(settings.maxHorizontalAccuracyMeters)) m")
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(value: $bindableSettings.maxHorizontalAccuracyMeters, in: 15...60, step: 5)
+                    }
+
+                    Stepper(value: $bindableSettings.userWeightKg, in: 35...180, step: 1) {
+                        HStack {
+                            Text("Body Weight (for Estimates)")
+                            Spacer()
+                            Text("\(Int(settings.userWeightKg)) kg")
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Recording Preferences")
+                } footer: {
+                    Text("GPS fixes worse than the accuracy threshold are filtered out automatically.")
+                }
+
+                Section {
                     Toggle("Bluetooth Heart-Rate Strap", isOn: $bindableSettings.featureFlags.bleHeartRate)
                     Toggle("Barometric Altimeter", isOn: $bindableSettings.featureFlags.barometricAltimeter)
                     Toggle("Personal Sections", isOn: $bindableSettings.featureFlags.personalSections)

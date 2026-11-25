@@ -1,5 +1,11 @@
 # CHANGELOG.md
 
+## Phase 1 — Recording Core
+- Expanded `TrackerCore` with `GPSFilter`, `PaceSmoother`, `MovingTimeEngine`, `ElevationEngine` (3 m hysteresis), `SplitCalculator`, `TrackBlobCodec` (compact zlib binary format), `JournalLineCodec`, `RecordingSessionEngine`, `TrackAnalyzer`, and `BasicGPXReader`.
+- Added 4 GPX test fixtures (`steady_run.gpx`, `road_ride.gpx`, `noisy_urban_gps.gpx`, `stop_and_go_walk.gpx`) and unit tests.
+- Defined the full SwiftData schema (`SDActivity`, `SDGear`, `SDGoal`, `SDSavedRoute`, `SDSection`) and `TrackFileStore` single-blob + 10s crash-recovery journal.
+- Implemented `LocationRecordingService` (`CLLocationUpdate.liveUpdates(.fitness)` + `CLBackgroundActivitySession`), `AudioHapticCueService` (`AVSpeechSynthesizer` with audio ducking), `RecordView` (3-2-1 countdown, live map polyline, telemetry, auto-pause, permission/reduced-accuracy guidance, recovery prompt), and `HistoryListView`.
+
 ## Phase 0 — Pipeline & App Scaffold
 - Initialized `RUN` (`com.kiddo56.run`) XcodeGen specification (`project.yml`) for iOS 17.0+ and Swift 6.0.
 - Created `.github/workflows/ios.yml` to run `TrackerCore` SwiftPM tests, simulator `RUNTests`, best-effort `RUNUITests` screenshot capture, and unsigned `.ipa` packaging.
