@@ -292,6 +292,7 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
             pointCount: summary.pointCount
         )
 
+        assignDefaultGearAndCheckRetirement(for: activity, modelContext: modelContext, unitSystem: settings.unitSystem)
         modelContext.insert(activity)
         try? modelContext.save()
 
@@ -331,6 +332,47 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
         default: prefix = "Night"
         }
         return "\(prefix) \(type.displayName)"
+    }
+
+    private func assignDefaultGearAndCheckRetirement(
+        for activity: SDActivity,
+        modelContext: ModelContext,
+        unitSystem: UnitSystem
+    ) {
+        guard let gearList = try? modelContext.fetch(FetchDescriptor<SDGear>()) else { return }
+        let matchingGear: SDGear?
+        switch activity.activityType {
+        case .run, .walk, .hike:
+            matchingGear = gearList.first(where: { !$0.isRetired && $0.isDefaultForRun })
+        case .ride:
+            matchingGear = gearList.first(where: { !$0.isRetired && $0.isDefaultForRide })
+        case .other:
+            matchingGear = nil
+        }
+
+        guard let gear = matchingGear else { return }
+        activity.gearID = gear.id
+
+        let existingActivities = (try? modelContext.fetch(FetchDescriptor<SDActivity>())) ?? []
+        let loggedDist = existingActivities
+            .filter { $0.gearID == gear.id && $0.id != activity.id }
+            .reduce(0.0) { $0 + $1.distanceMeters }
+        let totalGearDist = gear.initialDistanceMeters + loggedDist + activity.distanceMeters
+
+        if gear.maxDistanceMeters > 0 && totalGearDist >= gear.maxDistanceMeters {
+            let gearID = gear.id
+            let gearName = gear.name
+            let currText = RunFormatter.distance(meters: totalGearDist, unit: unitSystem, decimals: 0)
+            let maxText = RunFormatter.distance(meters: gear.maxDistanceMeters, unit: unitSystem, decimals: 0)
+            Task {
+                await NotificationService.shared.sendGearRetirementAlertIfNeeded(
+                    gearID: gearID,
+                    gearName: gearName,
+                    currentText: currText,
+                    maxText: maxText
+                )
+            }
+        }
     }
 
     private func beginCountdown(settings: AppSettingsStore) {

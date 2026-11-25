@@ -5,6 +5,7 @@ import TrackerCore
 enum AppTab: Hashable {
     case record
     case history
+    case insights
     case settings
 }
 
@@ -32,6 +33,12 @@ struct RUNApp: App {
                         Label("History", systemImage: "list.bullet.rectangle")
                     }
                     .tag(AppTab.history)
+
+                InsightsDashboardView()
+                    .tabItem {
+                        Label("Insights", systemImage: "chart.bar.xaxis")
+                    }
+                    .tag(AppTab.insights)
 
                 SettingsView()
                     .tabItem {

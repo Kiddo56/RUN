@@ -21,6 +21,7 @@ struct ActivityDetailView: View {
     @State private var showingEditSheet = false
     @State private var showingTrimSheet = false
     @State private var showingMergeSheet = false
+    @State private var showingShareSheet = false
     @State private var showingDeleteConfirm = false
 
     private var selectedSample: TrackChartSample? {
@@ -66,8 +67,23 @@ struct ActivityDetailView: View {
         .navigationTitle(activity.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    showingShareSheet = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .accessibilityLabel("Share Activity Card")
+                .disabled(points.isEmpty)
+
                 Menu {
+                    Button {
+                        showingShareSheet = true
+                    } label: {
+                        Label("Share Activity Card", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(points.isEmpty)
+
                     Button {
                         showingEditSheet = true
                     } label: {
@@ -112,6 +128,9 @@ struct ActivityDetailView: View {
         }
         .sheet(isPresented: $showingMergeSheet) {
             MergeActivitySheet(activity: activity, primaryPoints: points)
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            ShareCardSheet(activity: activity, points: points)
         }
         .alert("Delete Activity?", isPresented: $showingDeleteConfirm) {
             Button("Delete", role: .destructive) {

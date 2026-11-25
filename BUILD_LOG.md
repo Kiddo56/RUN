@@ -1,6 +1,6 @@
 # BUILD_LOG.md — CI Run Ledger
 
-**Budget:** Soft limit 80 runs (`6 / 80` used).
+**Budget:** Soft limit 80 runs (`7 / 80` used).
 
 | Run # | GitHub Run ID | Phase | Runner | Commit | Result | Notes |
 |------:|--------------:|-------|--------|--------|--------|-------|
@@ -10,3 +10,4 @@
 | 4 | `45675872280` | Phase 1 | `xcode-27` | `7cac260` | **Failed** | `TrackerCoreTests` 16/16 passed! `RecordView.swift:52` passed `RecoverySheetItem` instead of `item.session` to `recoveryPromptSheet`. Fixed + silenced unused `self` warning. |
 | 5 | `45677912579` | Phase 1 | `xcode-27` (`iPhone 17e` iOS 27.2) | `220c2b0` | **Success** | `TrackerCoreTests` 16/16 passed, `RUNTests` 5/5 passed, `dist/RUN.ipa` (862,879 bytes) verified (`com.kiddo56.run`, v1.0.0, SHA `220c2b0`). Best-effort `RUNUITests` failed 2nd time (`FBSOpenApplicationServiceErrorDomain Code=3`), so `RUNUITests` is dropped starting Phase 2. |
 | 6 | `45682338928` | Phase 2 | `xcode-27` | `b4faf9f` | **Failed** | 19/20 `TrackerCoreTests` passed; `TrackAnalyzer.summarize` treated `TrackPoint.speed == 0` as stationary instead of falling back to segment distance/time speed (`p1.speed > 0 ? p1.speed : segSpeed`). Fixed. |
+| 7 | `45682801797` | Phase 2 | `xcode-27` (`iPhone 17e` iOS 27.2) | `d50f6d2` | **Success** | `TrackerCoreTests` 20/20 passed, `RUNTests` 6/6 passed, `dist/RUN.ipa` (1,025,575 bytes) verified (`com.kiddo56.run`, v1.0.0, SHA `d50f6d2`). Duration 14m37s. |

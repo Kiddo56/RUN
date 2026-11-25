@@ -1,5 +1,10 @@
 # CHANGELOG.md
 
+## Phase 3 — Stats Dashboard, PRs, Goals, Gear & Share Card
+- Added `StatsAggregator` (weekly/monthly/yearly/all-time totals, daily/weekly streaks, volume trend buckets, 42d/7d fitness-fatigue EMA trend, goal progress), `PersonalRecordScanner` (sliding-window fastest 1K/1Mi/5K/10K/Half/Marathon, longest distance, biggest climb), and `TrackPrivacyTrimmer` (200 m endpoint hide) with unit tests in `TrackerCore`.
+- Built `InsightsDashboardView`, `PersonalRecordsView`, `GoalsView` (progress rings + local `UNUserNotificationCenter` reminders via `NotificationService`), and `GearView` (mileage tracking, default gear auto-assignment on finish, retirement alerts).
+- Built `ShareCardRenderer` (`MKMapSnapshotter` + `UIGraphicsImageRenderer`) and `ShareCardSheet` with optional first/last 200 m privacy trim and `ShareLink` PNG export.
+
 ## Phase 2 — History, Calendar, Detail & Editing
 - Added `TrackChartBuilder` and `TrackEditor` (trim and gap-safe chronological merge) with unit tests in `TrackerCore`.
 - Upgraded `HistoryListView` with Timeline / Calendar switcher, activity type pills, search, and navigation to `ActivityDetailView`.
