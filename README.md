@@ -2,7 +2,7 @@
 
 **APP_NAME:** `RUN`  
 **Bundle Identifier:** `com.kiddo56.run` *(locked — never change, so local activity history survives 7-day re-signing)*  
-**Target Platform:** iOS 17.0+ (built for iPhone 13 running iOS 26.6.1, Swift 6.0)  
+**Target Platform:** iOS 17.0+ (built for iPhone, Swift 6.0)  
 **Signing / Distribution Model:** Personal single-user sideload via Sideloadly from Windows (free Apple ID, 7-day certificate cycle, zero paid entitlements)
 
 RUN is a personal, single-user, fully local iOS GPS activity and strength tracker for **Runs**, **Rides**, **Walks**, **Hikes**, **Strength**, and **Other** workouts (**Version `1.1`**). All data stays on your iPhone in versioned SwiftData (`RunSchemaV1 -> V2` lightweight migration) and compact compressed track files — there are no user accounts, no backend servers, no analytics, no social feeds, and zero third-party runtime dependencies.
