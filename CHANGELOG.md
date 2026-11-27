@@ -12,6 +12,12 @@
 - Added expandable full-screen activity detail map (`FullScreenActivityMapView`) preserving pace/speed route coloring, km/mile markers, and live interactive route scrubbing synced with Activity Detail charts.
 - Added `TrackMapHelper` in `TrackerCore` for polyline downsampling, interpolated km/mile markers, bounding regions, and camera update throttling, plus `ScreenAwakeController` ("Keep Screen Awake While Recording", default OFF, respecting iOS Low Power Mode).
 
+### Change 2: More Human-Sounding Voice
+- Consolidated all spoken cues into a single `SpeechService` using `.playback` + `.spokenAudio` + `.duckOthers` + `notifyOthersOnDeactivation`, interruption handling, non-overlapping FIFO queue, stale-cue dropping, and explicit voice identifier selection (`AVSpeechSynthesisVoice(identifier:)`, Premium > Enhanced > Default ranking, automatic fallback logging on missing voices).
+- Built pure-Swift `PhraseComposer` and `VoiceRanker` in `TrackerCore` with spoken numbers ("five twenty-two per kilometre", "two point five kilometres"), natural utterance delays, non-repeating conversational templates, occasional encouragement, and unit tests.
+- Added **Settings > Voice** (`VoiceSettingsView`) with voice quality badges, Preview button, speech-rate/pitch/volume sliders, cue triggers (every km/mi, every N minutes, manual lap, pause/resume, goal reached), and the "Get a more natural voice" help card auto-refreshing on foreground return.
+- Added `audio` to `UIBackgroundModes` in `project.yml` alongside `location` and `bluetooth-central`.
+
 ## v1.0.0 — Phase 5: Optional Feature-Flagged Extras & Documentation Release
 - Added pure-Swift Phase 5 engines and unit tests in `TrackerCore`:
   - `BLEHeartRateParser` for Bluetooth SIG Heart Rate Measurement (`0x2A37`, 8-bit & 16-bit BPM payloads).

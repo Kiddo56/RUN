@@ -533,18 +533,33 @@ struct RecordView: View {
             .frame(maxWidth: .infinity)
 
         case .recording:
-            Button {
-                recorder.pauseManually()
-            } label: {
-                Label("Pause", systemImage: "pause.fill")
-                    .font(.headline.weight(.bold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(RunTheme.amber)
-                    .foregroundStyle(RunTheme.midnightSlate)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            HStack(spacing: 10) {
+                Button {
+                    recorder.markLap(settings: settings)
+                } label: {
+                    Label("Lap", systemImage: "flag.fill")
+                        .font(.headline.weight(.bold))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .foregroundStyle(RunTheme.electricTeal)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .accessibilityLabel("Mark lap")
+
+                Button {
+                    recorder.pauseManually()
+                } label: {
+                    Label("Pause", systemImage: "pause.fill")
+                        .font(.headline.weight(.bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(RunTheme.amber)
+                        .foregroundStyle(RunTheme.midnightSlate)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .accessibilityIdentifier("record.pauseButton")
             }
-            .accessibilityIdentifier("record.pauseButton")
 
         case .manuallyPaused, .autoPaused:
             HStack(spacing: 10) {

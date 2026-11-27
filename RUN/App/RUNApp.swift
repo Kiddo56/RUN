@@ -17,6 +17,7 @@ struct RUNApp: App {
     @State private var selectedTab: AppTab = .record
     @State private var settings = AppSettingsStore()
     @State private var diagnostics = DiagnosticsLogger.shared
+    @State private var speechService = SpeechService.shared
     @State private var recorder = LocationRecordingService()
     @State private var heartRateMonitor = HeartRateMonitorService()
     @State private var barometer = BarometerService()
@@ -68,6 +69,7 @@ struct RUNApp: App {
             .tint(RunTheme.electricTeal)
             .environment(settings)
             .environment(diagnostics)
+            .environment(speechService)
             .environment(recorder)
             .environment(heartRateMonitor)
             .environment(barometer)
@@ -76,6 +78,7 @@ struct RUNApp: App {
                 didPerformStartupCheck = true
                 let info = AppBuildInfo.current()
                 diagnostics.log(.lifecycle, "Launched \(info.appName) \(info.versionDisplay) [\(info.commitSHA)]")
+                speechService.refreshAvailableVoices(settings: settings)
                 configureRecorderSensorHooks()
                 recorder.checkForPendingRecovery()
             }
@@ -101,6 +104,7 @@ struct RUNApp: App {
                 switch newPhase {
                 case .active:
                     diagnostics.log(.lifecycle, "Scene phase -> active")
+                    speechService.refreshAvailableVoices(settings: settings)
                 case .inactive:
                     diagnostics.log(.lifecycle, "Scene phase -> inactive")
                     recorder.flushForBackgroundTransition()

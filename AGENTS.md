@@ -16,7 +16,7 @@
 - **Diagnostics:** Log lifecycle, auth, location, recording, recovery, backup, and errors to `DiagnosticsLogger.shared` (rolling 2,000 entries, exportable as `.txt`).
 
 ## Current State
-- **Active Release:** v1.1 Update — Data Safety GREEN (Run #11); pushing Change 1 (Full-Screen Map) as Run #12 (v1.1 #2).
-- **Last Green CI:** Run #11 (`46035577162`), commit `2df78d0`, runner `xcode-27`, `TrackerCoreTests` 34/34 passed, `RUNTests` 11/11 passed (on-disk v1->v2 SwiftData migration verified), `RUN-1.1.ipa` packaged.
-- **CI Budget (v1.1):** 1 / 40 runs used (pushing #2).
-- **Next Step:** Verify Change 1 CI green, then implement Change 2 (More Human-Sounding Voice) and Change 3 (Fitness Section).
+- **Active Release:** v1.1 Update — Pushing Change 1 fix (`FullScreenActivityMapView`) + Change 2 (More Human-Sounding Voice: `SpeechService`, `PhraseComposer`, `VoiceSettingsView`, `UIBackgroundModes: audio`) as Run #13 (v1.1 #3).
+- **Last Green CI:** Run #11 (`46035577162`), commit `2df78d0`, runner `xcode-27`, `TrackerCoreTests` 34/34 passed, `RUNTests` 11/11 passed.
+- **CI Budget (v1.1):** 2 / 40 runs used (pushing #3).
+- **Next Step:** Verify Run #13 green (Change 1 + Change 2), then implement Change 3 (Fitness Section: 120+ exercise catalog, workout logging + autosave/recovery + rest timer, 9 templates, progress charts & PRs, timeline/calendar/insights integration).

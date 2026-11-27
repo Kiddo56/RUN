@@ -82,6 +82,10 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
     private var unpersistedPoints: [TrackPoint] = []
     private var lastFlushDate: Date = .distantPast
     private var lastOffRouteAlertDate: Date = .distantPast
+    private var lastTimeCueMinuteMark: Int = 0
+    private var manualLapCount: Int = 0
+    private var lastLapDistanceMeters: Double = 0
+    private var lastLapMovingTime: TimeInterval = 0
     private var pendingAutoStartAfterAuth = false
     private weak var activeSettings: AppSettingsStore?
 
@@ -263,7 +267,9 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
         syncTelemetryFromEngine()
         flushPendingPoints(force: true)
         cues.stateChange(hapticsEnabled: activeSettings?.hapticsEnabled ?? true)
-        cues.announcePause(auto: false, audioEnabled: activeSettings?.audioCuesEnabled ?? true)
+        if let settings = activeSettings {
+            cues.announcePause(auto: false, settings: settings)
+        }
         DiagnosticsLogger.shared.log(.recording, "Manually paused at \(Int(distanceMeters))m")
     }
 
@@ -274,8 +280,26 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
         state = .recording
         syncTelemetryFromEngine()
         cues.stateChange(hapticsEnabled: activeSettings?.hapticsEnabled ?? true)
-        cues.announceResume(auto: false, audioEnabled: activeSettings?.audioCuesEnabled ?? true)
+        if let settings = activeSettings {
+            cues.announceResume(auto: false, settings: settings)
+        }
         DiagnosticsLogger.shared.log(.recording, "Manually resumed")
+    }
+
+    func markLap(settings: AppSettingsStore) {
+        guard state.isActiveSession else { return }
+        manualLapCount += 1
+        let lapDist = max(0, distanceMeters - lastLapDistanceMeters)
+        let lapDur = max(0, movingTime - lastLapMovingTime)
+        lastLapDistanceMeters = distanceMeters
+        lastLapMovingTime = movingTime
+        cues.announceLap(
+            lapNumber: manualLapCount,
+            lapDistanceMeters: lapDist,
+            lapDuration: lapDur,
+            settings: settings
+        )
+        DiagnosticsLogger.shared.log(.recording, "Manual lap #\(manualLapCount): \(Int(lapDist))m in \(Int(lapDur))s")
     }
 
     func finish(title: String, notes: String, modelContext: ModelContext, settings: AppSettingsStore) -> SDActivity? {
@@ -319,6 +343,21 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
             pointCount: summary.pointCount
         )
 
+        let existingBeforeInsert = ((try? modelContext.fetch(FetchDescriptor<SDActivity>())) ?? []).map {
+            ActivityStatsInput(
+                id: $0.id,
+                title: $0.title,
+                activityType: $0.activityType,
+                startDate: $0.startDate,
+                movingTime: $0.movingTime,
+                distanceMeters: $0.distanceMeters,
+                elevationGainMeters: $0.elevationGainMeters,
+                effortScore: $0.effortScore,
+                estimatedCalories: $0.estimatedCalories,
+                gearID: $0.gearID
+            )
+        }
+
         assignDefaultGearAndCheckRetirement(for: activity, modelContext: modelContext, unitSystem: settings.unitSystem)
         modelContext.insert(activity)
         try? modelContext.save()
@@ -326,8 +365,13 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
         cues.announceFinish(
             distanceMeters: summary.distanceMeters,
             movingTime: summary.movingTime,
-            unitSystem: settings.unitSystem,
-            audioEnabled: settings.audioCuesEnabled
+            settings: settings
+        )
+        announceNewlyReachedGoals(
+            beforeActivities: existingBeforeInsert,
+            addedActivity: activity,
+            modelContext: modelContext,
+            settings: settings
         )
         DiagnosticsLogger.shared.log(
             .recording,
@@ -430,6 +474,10 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
         self.lastSplitCompleted = nil
         self.unpersistedPoints = []
         self.lastFlushDate = now
+        self.lastTimeCueMinuteMark = 0
+        self.manualLapCount = 0
+        self.lastLapDistanceMeters = 0
+        self.lastLapMovingTime = 0
 
         let newEngine = RecordingSessionEngine(
             activityType: selectedActivityType,
@@ -462,7 +510,7 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
         DiagnosticsLogger.shared.log(.recording, "Started \(selectedActivityType.displayName) session \(sessionID.uuidString) with CLBackgroundActivitySession")
 
         cues.countdownGo(hapticsEnabled: settings.hapticsEnabled)
-        cues.announceStart(type: selectedActivityType, audioEnabled: settings.audioCuesEnabled)
+        cues.announceStart(type: selectedActivityType, settings: settings)
 
         onSessionStarted?()
         startLocationUpdatesStream()
@@ -505,6 +553,22 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
         engine = currentEngine
         handleMovingTransition(transition)
         syncTelemetryFromEngine()
+
+        if state == .recording, let settings = activeSettings, settings.cueEveryNMinutes > 0 {
+            let interval = settings.cueEveryNMinutes
+            let currentMark = Int(movingTime / 60.0) / interval
+            if currentMark > lastTimeCueMinuteMark && currentMark > 0 {
+                lastTimeCueMinuteMark = currentMark
+                cues.announceTimeInterval(
+                    movingTime: movingTime,
+                    distanceMeters: distanceMeters,
+                    currentPaceSecondsPerMeter: currentPaceSecondsPerMeter,
+                    currentSpeedMPS: currentSpeedMPS,
+                    type: selectedActivityType,
+                    settings: settings
+                )
+            }
+        }
 
         if now.timeIntervalSince(lastFlushDate) >= 10.0 {
             flushPendingPoints(force: false)
@@ -557,10 +621,9 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
             cues.announceSplit(
                 split,
                 type: selectedActivityType,
-                unitSystem: settings.unitSystem,
                 totalDistanceMeters: currentEngine.distanceMeters,
                 totalMovingTime: currentEngine.movingTime,
-                audioEnabled: settings.audioCuesEnabled
+                settings: settings
             )
             DiagnosticsLogger.shared.log(.recording, "Completed split #\(split.index)")
         }
@@ -587,13 +650,9 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
 
         if status.isOffRoute && now.timeIntervalSince(lastOffRouteAlertDate) >= 30.0 {
             lastOffRouteAlertDate = now
-            let unit = activeSettings?.unitSystem ?? .metric
-            cues.offRouteAlert(
-                distanceMeters: status.distanceOffRouteMeters,
-                unitSystem: unit,
-                audioEnabled: activeSettings?.audioCuesEnabled ?? true,
-                hapticsEnabled: activeSettings?.hapticsEnabled ?? true
-            )
+            if let settings = activeSettings {
+                cues.offRouteAlert(distanceMeters: status.distanceOffRouteMeters, settings: settings)
+            }
             DiagnosticsLogger.shared.log(.location, "Off-route alert: \(Int(status.distanceOffRouteMeters))m from \(followed.name)")
         }
     }
@@ -606,15 +665,65 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
             if state == .recording {
                 state = .autoPaused
                 cues.stateChange(hapticsEnabled: activeSettings?.hapticsEnabled ?? true)
-                cues.announcePause(auto: true, audioEnabled: activeSettings?.audioCuesEnabled ?? true)
+                if let settings = activeSettings {
+                    cues.announcePause(auto: true, settings: settings)
+                }
                 DiagnosticsLogger.shared.log(.recording, "Auto-paused")
             }
         case .didAutoResume:
             if state == .autoPaused {
                 state = .recording
                 cues.stateChange(hapticsEnabled: activeSettings?.hapticsEnabled ?? true)
-                cues.announceResume(auto: true, audioEnabled: activeSettings?.audioCuesEnabled ?? true)
+                if let settings = activeSettings {
+                    cues.announceResume(auto: true, settings: settings)
+                }
                 DiagnosticsLogger.shared.log(.recording, "Auto-resumed")
+            }
+        }
+    }
+
+    private func announceNewlyReachedGoals(
+        beforeActivities: [ActivityStatsInput],
+        addedActivity: SDActivity,
+        modelContext: ModelContext,
+        settings: AppSettingsStore
+    ) {
+        guard settings.cueOnGoalReachedEnabled,
+              let goals = try? modelContext.fetch(FetchDescriptor<SDGoal>()),
+              !goals.isEmpty else {
+            return
+        }
+        let addedInput = ActivityStatsInput(
+            id: addedActivity.id,
+            title: addedActivity.title,
+            activityType: addedActivity.activityType,
+            startDate: addedActivity.startDate,
+            movingTime: addedActivity.movingTime,
+            distanceMeters: addedActivity.distanceMeters,
+            elevationGainMeters: addedActivity.elevationGainMeters,
+            effortScore: addedActivity.effortScore,
+            estimatedCalories: addedActivity.estimatedCalories,
+            gearID: addedActivity.gearID
+        )
+        let afterActivities = beforeActivities + [addedInput]
+        for goal in goals where goal.targetValue > 0 {
+            let filter = goal.activityTypeRaw.flatMap { ActivityType(rawValue: $0) }
+            let before = StatsAggregator.goalProgress(
+                activities: beforeActivities,
+                periodRaw: goal.periodRaw,
+                metricRaw: goal.metricRaw,
+                activityTypeFilter: filter
+            )
+            let after = StatsAggregator.goalProgress(
+                activities: afterActivities,
+                periodRaw: goal.periodRaw,
+                metricRaw: goal.metricRaw,
+                activityTypeFilter: filter
+            )
+            if before < goal.targetValue && after >= goal.targetValue {
+                cues.announceGoalReached(goalTitle: goal.title, settings: settings)
+                DiagnosticsLogger.shared.log(.recording, "Goal reached: \(goal.title)")
+                break
             }
         }
     }

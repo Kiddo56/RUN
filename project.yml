@@ -58,6 +58,7 @@ targets:
           - UIInterfaceOrientationPortrait
         UIBackgroundModes:
           - location
+          - audio
           - bluetooth-central
         NSLocationWhenInUseUsageDescription: "RUN uses your location while tracking activities to record distance, pace, elevation, and your route."
         NSLocationAlwaysAndWhenInUseUsageDescription: "RUN can continue tracking your activity when the screen is locked or the app is in the background."

@@ -195,9 +195,10 @@ struct FullScreenActivityMapView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 if let sample = selectedSample {
+                    let paceSPM = sample.speedMPS > 0 ? (1.0 / sample.speedMPS) : 0
                     let rate = activity.activityType.prefersSpeedOverPace
                         ? RunFormatter.speed(metersPerSecond: sample.speedMPS, unit: unit)
-                        : RunFormatter.pace(secondsPerMeter: sample.paceSecondsPerMeter, unit: unit)
+                        : RunFormatter.pace(secondsPerMeter: paceSPM, unit: unit)
                     Text("\(RunFormatter.distance(meters: sample.distanceMeters, unit: unit)) · \(rate) · \(RunFormatter.elevation(meters: sample.altitudeMeters, unit: unit))")
                         .font(.caption.weight(.bold).monospacedDigit())
                         .foregroundStyle(RunTheme.electricTeal)

@@ -17,3 +17,5 @@
    - RUN uses **When In Use** location authorization paired with `CLBackgroundActivitySession` and `UIBackgroundModes = location` (standard pattern for modern iOS workout trackers). If **Precise Location** is turned off in iOS Settings or **Low Power Mode** restricts background frequency, GPS accuracy and split timing can degrade.
 5. **Phase 5 Optional Features Are Off by Default:**
    - Bluetooth Heart Rate (`bleHeartRate`), Barometric Altimeter (`barometricAltimeter`), Personal Sections (`personalSections`), and Personal Heatmap (`personalHeatmap`) start disabled in `FeatureFlags` so no extra hardware permissions are requested unless opted in under **Settings > Optional Features**.
+6. **Locked-Screen Spoken Cues Need Real-Device Verification (v1.1):**
+   - `audio` has been added to `UIBackgroundModes` alongside `location`, and `SpeechService` uses `.playback` + `.spokenAudio` + `.duckOthers` with explicit voice identifiers. Actual locked-screen delivery alongside third-party music/podcast apps and downloaded Enhanced/Premium voices must be verified on your physical iPhone 13.

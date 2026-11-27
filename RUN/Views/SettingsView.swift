@@ -5,6 +5,7 @@ import TrackerCore
 struct SettingsView: View {
     @Environment(AppSettingsStore.self) private var settings
     @Environment(DiagnosticsLogger.self) private var diagnostics
+    @Environment(SpeechService.self) private var speechService
     @Query private var activities: [SDActivity]
 
     @State private var navigateToBackup = false
@@ -53,10 +54,27 @@ struct SettingsView: View {
                     Text("Metric (km, min/km, m) is enabled by default.")
                 }
 
+                Section("Voice & Spoken Cues") {
+                    NavigationLink(destination: VoiceSettingsView()) {
+                        HStack {
+                            Label("Voice", systemImage: "waveform.circle.fill")
+                            Spacer()
+                            if let active = speechService.activeVoice {
+                                Text("\(active.name) (\(active.quality.label))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text(settings.audioCuesEnabled ? "System" : "Off")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+
                 Section {
                     Toggle("Auto-Pause When Stopped", isOn: $bindableSettings.autoPauseEnabled)
                     Toggle("Keep Screen Awake While Recording", isOn: $bindableSettings.keepScreenAwakeWhileRecording)
-                    Toggle("Spoken Split & Status Cues", isOn: $bindableSettings.audioCuesEnabled)
                     Toggle("Haptic Feedback", isOn: $bindableSettings.hapticsEnabled)
 
                     VStack(alignment: .leading, spacing: 4) {
