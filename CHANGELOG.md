@@ -18,6 +18,14 @@
 - Added **Settings > Voice** (`VoiceSettingsView`) with voice quality badges, Preview button, speech-rate/pitch/volume sliders, cue triggers (every km/mi, every N minutes, manual lap, pause/resume, goal reached), and the "Get a more natural voice" help card auto-refreshing on foreground return.
 - Added `audio` to `UIBackgroundModes` in `project.yml` alongside `location` and `bluetooth-central`.
 
+### Change 3: Fitness Section (Strength Training)
+- Added a dedicated **Fitness** tab (keeping a clean 5-tab bar: Record, Fitness, History, Insights, Settings, with Saved Routes accessible 1-tap from Record) split into **Workouts**, **Exercises**, and **Progress**.
+- Bundled an original 133-exercise catalog (`RUN/Resources/exercises.json`, `catalogVersion: 1`) across all 10 muscle groups meeting every group minimum (Legs 28, Chest 15, Back 17, Shoulders 13, Biceps 9, Triceps 9, Forearms 5, Core 15, Full Body 11, Mobility 11), with search, muscle/equipment/difficulty/favorite filters, Add Custom Exercise, personal notes, and fitness disclaimer.
+- Built live strength workout logging (`WorkoutSessionManager`, `ActiveWorkoutView`) with empty or template starts, set types (`Warm-Up`, `Normal`, `Drop`, `Failure`), kg/lb independent weight unit, optional RPE, previous performance display, automatic rest timer with haptics & `SpeechService` voice cue, keep-screen-awake option, per-set autosave with crash/kill Resume/Discard recovery, live PR badges, and past workout editing/deletion.
+- Added 9 prebuilt original workout templates (`Leg Day`, `Push Day`, `Pull Day`, `Upper Body`, `Lower Body`, `Arms Day`, `Full Body Beginner`, `Core Finisher`, `Home Bodyweight Circuit`) plus template scaling, creation, editing, duplication, and deletion.
+- Added **Fitness > Progress** with Epley estimated 1RM, Top Set, and Volume Swift Charts, per-exercise PR cards, Weekly Muscle Group Volume chart, and Training Frequency calendar.
+- Integrated completed Strength workouts into main History Timeline, Calendar, Streaks, Insights, and Time/Session Goals, plus added Strength Workouts CSV export in Settings > Backup & Export and pure-Swift unit tests (`StrengthEngineTests`).
+
 ## v1.0.0 — Phase 5: Optional Feature-Flagged Extras & Documentation Release
 - Added pure-Swift Phase 5 engines and unit tests in `TrackerCore`:
   - `BLEHeartRateParser` for Bluetooth SIG Heart Rate Measurement (`0x2A37`, 8-bit & 16-bit BPM payloads).

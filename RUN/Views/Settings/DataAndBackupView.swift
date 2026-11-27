@@ -9,6 +9,7 @@ struct DataAndBackupView: View {
 
     @Query(sort: \SDActivity.startDate, order: .reverse) private var activities: [SDActivity]
     @Query private var gearList: [SDGear]
+    @Query private var workoutSessions: [SDWorkoutSession]
 
     @State private var replaceExistingOnRestore = false
     @State private var showingBackupImporter = false
@@ -17,6 +18,7 @@ struct DataAndBackupView: View {
     @State private var preparedBackupURL: URL?
     @State private var preparedBulkZipURL: URL?
     @State private var preparedCSVURL: URL?
+    @State private var preparedWorkoutsCSVURL: URL?
 
     @State private var alertTitle = ""
     @State private var alertMessage = ""
@@ -86,6 +88,20 @@ struct DataAndBackupView: View {
                             .foregroundStyle(RunTheme.electricTeal)
                     }
                 }
+
+                Button {
+                    generateWorkoutsCSV()
+                } label: {
+                    Label("Prepare Strength Workouts CSV (.csv)", systemImage: "dumbbell")
+                }
+                .disabled(workoutSessions.filter(\.isCompleted).isEmpty)
+
+                if let preparedWorkoutsCSVURL {
+                    ShareLink(item: preparedWorkoutsCSVURL) {
+                        Label("Share Strength Workouts (.csv)", systemImage: "square.and.arrow.up")
+                            .foregroundStyle(RunTheme.electricTeal)
+                    }
+                }
             }
 
             Section("Import") {
@@ -151,6 +167,17 @@ struct DataAndBackupView: View {
             )
         } catch {
             presentAlert(title: "CSV Export Failed", message: error.localizedDescription)
+        }
+    }
+
+    private func generateWorkoutsCSV() {
+        do {
+            preparedWorkoutsCSVURL = try DataTransferService.exportWorkoutsCSV(
+                modelContext: modelContext,
+                weightUnit: settings.weightUnit
+            )
+        } catch {
+            presentAlert(title: "Workouts CSV Export Failed", message: error.localizedDescription)
         }
     }
 

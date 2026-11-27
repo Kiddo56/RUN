@@ -193,9 +193,15 @@ struct InsightsDashboardView: View {
                         Text("\(item.count)×")
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
-                        Text(RunFormatter.distance(meters: item.distanceMeters, unit: unit))
-                            .font(.subheadline.weight(.bold).monospacedDigit())
-                            .foregroundStyle(RunTheme.electricTeal)
+                        if item.activityType == .strength {
+                            Text(RunFormatter.duration(seconds: item.movingTime))
+                                .font(.subheadline.weight(.bold).monospacedDigit())
+                                .foregroundStyle(RunTheme.violet)
+                        } else {
+                            Text(RunFormatter.distance(meters: item.distanceMeters, unit: unit))
+                                .font(.subheadline.weight(.bold).monospacedDigit())
+                                .foregroundStyle(RunTheme.electricTeal)
+                        }
                     }
                     .padding(.vertical, 4)
                 }

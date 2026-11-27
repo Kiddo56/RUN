@@ -15,6 +15,8 @@ struct HistoryListView: View {
 
     @Query(sort: \SDActivity.startDate, order: .reverse)
     private var activities: [SDActivity]
+    @Query
+    private var workoutSessions: [SDWorkoutSession]
 
     @State private var displayMode: HistoryDisplayMode = .timeline
     @State private var selectedTypeFilter: ActivityType? = nil
@@ -62,7 +64,9 @@ struct HistoryListView: View {
                 } else {
                     ActivityCalendarView(
                         activities: filteredActivities,
-                        unitSystem: settings.unitSystem
+                        workoutSessions: workoutSessions,
+                        unitSystem: settings.unitSystem,
+                        weightUnit: settings.weightUnit
                     )
                 }
             }
@@ -123,10 +127,21 @@ struct HistoryListView: View {
                 )
             )
         } else {
+            let sessionByLinkedID = Dictionary(
+                uniqueKeysWithValues: workoutSessions.compactMap { s in
+                    s.linkedActivityID.map { ($0, s) }
+                }
+            )
             List {
                 ForEach(filteredActivities) { activity in
-                    NavigationLink(destination: ActivityDetailView(activity: activity)) {
-                        ActivityRowCard(activity: activity, unitSystem: settings.unitSystem)
+                    if activity.activityType == .strength, let session = sessionByLinkedID[activity.id] {
+                        NavigationLink(destination: WorkoutDetailView(session: session)) {
+                            StrengthActivityRowCard(activity: activity, session: session, weightUnit: settings.weightUnit)
+                        }
+                    } else {
+                        NavigationLink(destination: ActivityDetailView(activity: activity)) {
+                            ActivityRowCard(activity: activity, unitSystem: settings.unitSystem)
+                        }
                     }
                 }
                 .onDelete(perform: deleteActivities)
@@ -138,10 +153,78 @@ struct HistoryListView: View {
     private func deleteActivities(at offsets: IndexSet) {
         let itemsToDelete = offsets.map { filteredActivities[$0] }
         for activity in itemsToDelete {
-            TrackFileStore.shared.deleteTrackFile(fileName: activity.trackFileName)
+            if activity.activityType == .strength,
+               let linked = workoutSessions.first(where: { $0.linkedActivityID == activity.id }) {
+                let targetID = linked.id
+                modelContext.delete(linked)
+                for entry in ((try? modelContext.fetch(FetchDescriptor<SDWorkoutExerciseEntry>())) ?? []) where entry.workoutSessionID == targetID {
+                    modelContext.delete(entry)
+                }
+                for s in ((try? modelContext.fetch(FetchDescriptor<SDSetEntry>())) ?? []) where s.workoutSessionID == targetID {
+                    modelContext.delete(s)
+                }
+            }
+            if !activity.trackFileName.isEmpty {
+                TrackFileStore.shared.deleteTrackFile(fileName: activity.trackFileName)
+            }
             modelContext.delete(activity)
         }
         try? modelContext.save()
+    }
+}
+
+struct StrengthActivityRowCard: View {
+    let activity: SDActivity
+    let session: SDWorkoutSession
+    let weightUnit: WeightUnit
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(RunTheme.midnightSlate)
+                Image(systemName: "dumbbell.fill")
+                    .font(.title3)
+                    .foregroundStyle(RunTheme.violet)
+            }
+            .frame(width: 56, height: 56)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(RunTheme.hudBorder.opacity(0.6), lineWidth: 1)
+            )
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(activity.title)
+                        .font(.headline)
+                        .lineLimit(1)
+                    Spacer()
+                    Text("Strength")
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(RunTheme.violet.opacity(0.18))
+                        .foregroundStyle(RunTheme.violet)
+                        .clipShape(Capsule())
+                }
+
+                Text(activity.startDate.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 10) {
+                    Text(RunFormatter.duration(seconds: session.durationSeconds))
+                        .font(.subheadline.weight(.bold).monospacedDigit())
+                    Text("\(session.exerciseCount) ex · \(session.completedSetCount) sets")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    Text(RunFormatter.volume(kg: session.totalVolumeKg, unit: weightUnit))
+                        .font(.caption.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(RunTheme.emerald)
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 

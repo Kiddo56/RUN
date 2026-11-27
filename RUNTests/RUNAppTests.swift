@@ -553,4 +553,70 @@ final class RUNAppTests: XCTestCase {
         XCTAssertEqual(try context.fetch(FetchDescriptor<SDSetEntry>()).count, 1)
         XCTAssertEqual(try context.fetch(FetchDescriptor<SDExercisePreference>()).count, 1)
     }
+
+    func testBundledExerciseCatalogTemplatesAndWorkoutFlow() throws {
+        let catalog = ExerciseCatalogService.shared
+        XCTAssertNil(catalog.loadError)
+        XCTAssertGreaterThanOrEqual(catalog.catalogVersion, 1)
+        XCTAssertGreaterThanOrEqual(catalog.builtInExercises.count, 120)
+
+        let groupMinimums: [MuscleGroup: Int] = [
+            .legs: 25,
+            .chest: 14,
+            .back: 16,
+            .shoulders: 12,
+            .biceps: 8,
+            .triceps: 8,
+            .forearms: 4,
+            .core: 14,
+            .fullBody: 10,
+            .mobility: 10
+        ]
+        for (group, minCount) in groupMinimums {
+            let actual = catalog.builtInExercises.filter { $0.muscleGroup == group }.count
+            XCTAssertGreaterThanOrEqual(actual, minCount, "MuscleGroup \(group.rawValue) has \(actual) < \(minCount)")
+        }
+
+        let suiteName = "run.fitness.tests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let settings = AppSettingsStore(userDefaults: defaults)
+        settings.audioCuesEnabled = false
+        settings.hapticsEnabled = false
+
+        let container = try RunModelContainerFactory.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+
+        catalog.seedBuiltInTemplatesIfNeeded(modelContext: context)
+        catalog.seedBuiltInTemplatesIfNeeded(modelContext: context) // idempotent
+        let templates = try context.fetch(FetchDescriptor<SDWorkoutTemplate>())
+        XCTAssertEqual(templates.count, 9)
+
+        let manager = WorkoutSessionManager()
+        let legTemplate = try XCTUnwrap(templates.first(where: { $0.builtInKey == "leg-day" }))
+        let session = manager.startWorkout(from: legTemplate, scaleFactor: 1.0, modelContext: context, settings: settings)
+        let entries = try context.fetch(FetchDescriptor<SDWorkoutExerciseEntry>()).filter { $0.workoutSessionID == session.id }
+        XCTAssertGreaterThanOrEqual(entries.count, 4)
+
+        let firstEntry = try XCTUnwrap(entries.first)
+        let sets = try context.fetch(FetchDescriptor<SDSetEntry>()).filter { $0.workoutExerciseEntryID == firstEntry.id }
+        let firstSet = try XCTUnwrap(sets.first)
+        firstSet.weightKg = 100
+        firstSet.reps = 8
+        manager.toggleSetCompletion(firstSet, entry: firstEntry, modelContext: context, settings: settings)
+        XCTAssertTrue(firstSet.isCompleted)
+
+        manager.finishWorkout(session: session, title: "Leg Day Test", notes: "Solid", modelContext: context, settings: settings)
+        XCTAssertTrue(session.isCompleted)
+        XCTAssertEqual(session.totalVolumeKg, 800, accuracy: 0.1)
+
+        let strengthActs = try context.fetch(FetchDescriptor<SDActivity>()).filter { $0.activityType == .strength }
+        XCTAssertEqual(strengthActs.count, 1)
+        XCTAssertEqual(strengthActs[0].title, "Leg Day Test")
+
+        let csvURL = try DataTransferService.exportWorkoutsCSV(modelContext: context, weightUnit: .kg)
+        defer { try? FileManager.default.removeItem(at: csvURL) }
+        let csvText = try String(contentsOf: csvURL, encoding: .utf8)
+        XCTAssertTrue(csvText.contains("Leg Day Test"))
+    }
 }

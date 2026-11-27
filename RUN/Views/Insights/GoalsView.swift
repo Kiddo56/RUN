@@ -105,6 +105,9 @@ struct GoalsView: View {
         if goal.metricRaw == "movingTime" {
             return "\(RunFormatter.duration(seconds: achieved)) / \(RunFormatter.duration(seconds: goal.targetValue))"
         }
+        if goal.metricRaw == "sessions" {
+            return "\(Int(achieved.rounded())) / \(Int(goal.targetValue.rounded())) sessions"
+        }
         let unit = settings.unitSystem
         return "\(RunFormatter.distance(meters: achieved, unit: unit)) / \(RunFormatter.distance(meters: goal.targetValue, unit: unit))"
     }
@@ -154,6 +157,7 @@ struct AddGoalSheet: View {
 
     private var targetUnitLabel: String {
         if metricRaw == "movingTime" { return "minutes" }
+        if metricRaw == "sessions" { return "sessions" }
         return settings.unitSystem.distanceUnitLabel
     }
 
@@ -171,7 +175,8 @@ struct AddGoalSheet: View {
 
                     Picker("Metric", selection: $metricRaw) {
                         Text("Distance").tag("distanceMeters")
-                        Text("Moving Time").tag("movingTime")
+                        Text("Time").tag("movingTime")
+                        Text("Sessions").tag("sessions")
                     }
                     .pickerStyle(.segmented)
 
@@ -235,6 +240,9 @@ struct AddGoalSheet: View {
         guard raw > 0 else { return 0 }
         if metricRaw == "movingTime" {
             return raw * 60.0
+        }
+        if metricRaw == "sessions" {
+            return raw.rounded()
         }
         return raw * settings.unitSystem.metersPerMajorUnit
     }

@@ -49,6 +49,13 @@ CI verified all pure-Swift math/codecs (`TrackerCoreTests`), SwiftData persisten
 - [ ] Toggle **Personal Sections** ON -> drop Start & End pins across a segment you walked/ran -> confirm your past attempt is matched and ranked under `Insights > Personal Sections`.
 - [ ] Toggle **Personal Heatmap** ON -> open `Insights > Personal Heatmap` -> verify all your recorded tracks overlap on the map.
 
+## 9. v1.1 Update Verification (Upgrade, Full-Screen Map, Natural Voice & Strength)
+- [ ] **Safe Upgrade Check:** Before updating, export a backup in v1.0; install `RUN-1.1.ipa` over v1.0 (do NOT delete the app) -> open **History** and confirm ALL prior v1.0 activities, gear, goals, and routes survived intact.
+- [ ] **Full-Screen Map Outdoors:** Tap the expand button on **Record** -> verify translucent HUD (time, distance, pace/speed, Pause/Resume, and confirmation-guarded Finish), cycle follow modes (`Free Pan` / `Follow` / `Heading`), toggle `Standard` / `Hybrid` / `Satellite`, tap **Zoom to whole route**, and confirm Start pin + km/mile markers render smoothly. Test the same expand button + synced route scrubber on **Activity Detail**.
+- [ ] **Keep Screen Awake + Low Power Mode:** Enable **Settings > Keep Screen Awake While Recording** -> verify screen stays on while recording, then toggle iOS Low Power Mode ON and confirm the screen dims/sleeps again.
+- [ ] **More Human-Sounding Voice (Screen Locked):** Open **Settings > Voice** -> if only Default voices exist, follow the "Get a more natural voice" card to download an Enhanced or Premium voice in iPhone Settings -> return to RUN and verify it appears automatically -> tap **Preview** -> lock your screen mid-run/walk and verify split/time/lap cues speak cleanly while ducking music.
+- [ ] **Full Strength Workout + Rest Timer + PR Badge:** Open **Fitness > Workouts** -> start **Leg Day** (or another template) -> log weight/reps, tick a set done -> verify rest timer starts automatically and announces via `SpeechService` when finished -> beat a prior set on a second session to verify the live **PR!** badge -> tap **Finish** -> confirm the Strength workout appears in **History**, **Calendar**, **Insights**, and **Fitness > Progress** charts, and test **Workouts CSV** + **v2 Full Backup**.
+
 ---
 
 ## How to Report a Bug or Issue

@@ -9,6 +9,7 @@ struct RoutesListView: View {
     @Environment(LocationRecordingService.self) private var recorder
 
     @Binding var selectedTab: AppTab
+    var onDismiss: (() -> Void)? = nil
 
     @Query(sort: \SDSavedRoute.createdAt, order: .reverse)
     private var routes: [SDSavedRoute]
@@ -46,6 +47,11 @@ struct RoutesListView: View {
             }
             .navigationTitle("Routes")
             .toolbar {
+                if let onDismiss {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") { onDismiss() }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button {
@@ -75,6 +81,7 @@ struct RoutesListView: View {
                         recorder.selectRouteToFollow(route)
                         selectedRoute = nil
                         selectedTab = .record
+                        onDismiss?()
                     }
                 )
             }

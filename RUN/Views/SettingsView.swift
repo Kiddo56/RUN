@@ -42,16 +42,27 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Picker("Units", selection: $bindableSettings.unitSystem) {
+                    Picker("Distance & Pace", selection: $bindableSettings.unitSystem) {
                         ForEach(UnitSystem.allCases) { unit in
                             Text(unit.displayName).tag(unit)
                         }
                     }
-                    .pickerStyle(.inline)
+                    Picker("Strength Weight", selection: $bindableSettings.weightUnit) {
+                        ForEach(WeightUnit.allCases) { unit in
+                            Text(unit.displayName).tag(unit)
+                        }
+                    }
                 } header: {
                     Text("Display Units")
                 } footer: {
-                    Text("Metric (km, min/km, m) is enabled by default.")
+                    Text("Metric distance (km, min/km, m) and kilograms (kg) are enabled by default and can be changed independently.")
+                }
+
+                Section("Strength & Fitness") {
+                    Toggle("Keep Screen Awake During Workouts", isOn: $bindableSettings.keepScreenAwakeDuringWorkout)
+                    Stepper(value: $bindableSettings.defaultRestSeconds, in: 15...300, step: 15) {
+                        LabeledContent("Default Rest Timer", value: "\(settings.defaultRestSeconds) s")
+                    }
                 }
 
                 Section("Voice & Spoken Cues") {

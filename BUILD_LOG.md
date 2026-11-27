@@ -1,6 +1,6 @@
 # BUILD_LOG.md — CI Run Ledger
 
-**Budget:** v1.0 used `10 / 80` runs. **v1.1 Update Budget:** Soft limit 40 runs (`3 / 40` used).
+**Budget:** v1.0 used `10 / 80` runs. **v1.1 Update Budget:** Soft limit 40 runs (`4 / 40` used).
 
 | Run # | GitHub Run ID | Phase | Runner | Commit | Result | Notes |
 |------:|--------------:|-------|--------|--------|--------|-------|
@@ -17,3 +17,4 @@
 | 11 (v1.1 #1) | `46035577162` | v1.1 Data Safety | `xcode-27` (`iPhone 17e` iOS 27.2) | `2df78d0` | **Success** | `TrackerCoreTests` 34/34 passed, `RUNTests` 11/11 passed (incl. on-disk SwiftData v1->v2 migration & v2 backup), `RUN-1.1.ipa` built (`com.kiddo56.run`, v1.1). Duration 13m33s. |
 | 12 (v1.1 #2) | `46037567122` | v1.1 Change 1 | `xcode-27` | `52b18b6` | **Failed** | `TrackerCoreTests` passed; `FullScreenActivityMapView.swift:200` used `sample.paceSecondsPerMeter` instead of `1.0 / sample.speedMPS`. Fixed in Run #13. |
 | 13 (v1.1 #3) | `46039039743` | v1.1 Change 1+2 | `xcode-27` | `8a35624` | **Failed** | `PhraseComposer.swift` called static `spoken*` helpers without `Self.` inside `mutating` instance methods. Fixed in Run #14. |
+| 14 (v1.1 #4) | `46039506052` | v1.1 Change 2 + Core | `xcode-27` (`iPhone 17e` iOS 27.2) | `7f1b26b` | **Failed** | `TrackerCoreTests` 43/43 & `RUNAppTests` 11/11 passed (0 failures), but eager `AVSpeechSynthesizer` + `speechVoices()` inside `SpeechService.init()` stalled Simulator host teardown (`The test runner hung before establishing connection`). Fixed by lazy `AVSpeechSynthesizer` + off-main-thread `speechVoices()` enumeration. |

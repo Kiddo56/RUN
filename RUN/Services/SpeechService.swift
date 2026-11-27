@@ -26,38 +26,48 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
         bestAvailableQuality == .defaultQuality
     }
 
-    private let synthesizer = AVSpeechSynthesizer()
+    private var synthesizer: AVSpeechSynthesizer?
     private var composer = PhraseComposer()
     private var queue: [QueuedSpeechItem] = []
     private var isInterrupted = false
     private var pendingSettings: AppSettingsStore?
     private var interruptionObserver: NSObjectProtocol?
+    private var voiceRefreshTask: Task<Void, Never>?
 
     override init() {
         super.init()
-        synthesizer.delegate = self
         setupInterruptionObserver()
-        refreshAvailableVoices(settings: nil)
     }
 
+    /// Asynchronously enumerates installed iOS voices off the main thread to keep app launch instant.
     func refreshAvailableVoices(settings: AppSettingsStore?) {
         if let settings {
             pendingSettings = settings
         }
         let localeID = Locale.current.identifier
-        let systemVoices = AVSpeechSynthesisVoice.speechVoices()
-        let descriptors = systemVoices.map { voice in
-            VoiceDescriptor(
-                identifier: voice.identifier,
-                name: voice.name,
-                languageCode: voice.language,
-                quality: mapQuality(voice.quality)
-            )
-        }
-        let ranked = VoiceRanker.rankVoices(descriptors, preferredLocaleIdentifier: localeID)
-        availableVoices = ranked
+        voiceRefreshTask?.cancel()
+        voiceRefreshTask = Task { [weak self] in
+            let ranked = await Task.detached(priority: .utility) { () -> [VoiceDescriptor] in
+                let systemVoices = AVSpeechSynthesisVoice.speechVoices()
+                let descriptors = systemVoices.map { voice in
+                    VoiceDescriptor(
+                        identifier: voice.identifier,
+                        name: voice.name,
+                        languageCode: voice.language,
+                        quality: Self.mapQuality(voice.quality)
+                    )
+                }
+                return VoiceRanker.rankVoices(descriptors, preferredLocaleIdentifier: localeID)
+            }.value
 
-        let savedID = settings?.selectedVoiceIdentifier ?? pendingSettings?.selectedVoiceIdentifier
+            guard !Task.isCancelled, let self else { return }
+            self.applyRankedVoices(ranked, settings: settings ?? self.pendingSettings)
+        }
+    }
+
+    private func applyRankedVoices(_ ranked: [VoiceDescriptor], settings: AppSettingsStore?) {
+        availableVoices = ranked
+        let savedID = settings?.selectedVoiceIdentifier
         let resolved = VoiceRanker.resolveVoice(savedIdentifier: savedID, rankedVoices: ranked)
         activeVoice = resolved.selected
 
@@ -68,18 +78,21 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
                 "Saved voice '\(savedID ?? "")' no longer installed; fell back to '\(fallbackName)'"
             )
             if let newID = resolved.selected?.identifier {
-                (settings ?? pendingSettings)?.selectedVoiceIdentifier = newID
+                settings?.selectedVoiceIdentifier = newID
             }
         }
     }
 
     func selectVoice(identifier: String, settings: AppSettingsStore) {
         settings.selectedVoiceIdentifier = identifier
-        refreshAvailableVoices(settings: settings)
+        if availableVoices.isEmpty {
+            refreshAvailableVoices(settings: settings)
+        } else {
+            applyRankedVoices(availableVoices, settings: settings)
+        }
     }
 
     func previewVoice(settings: AppSettingsStore) {
-        refreshAvailableVoices(settings: settings)
         let cue = PhraseComposer.previewSample(unit: settings.unitSystem)
         enqueue(cue, settings: settings, interruptCurrent: true, maxAgeSeconds: 10.0)
     }
@@ -202,14 +215,24 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
 
     func stopAll() {
         queue.removeAll()
-        if synthesizer.isSpeaking {
-            synthesizer.stopSpeaking(at: .immediate)
+        if synthesizer?.isSpeaking == true {
+            synthesizer?.stopSpeaking(at: .immediate)
         }
         isSpeaking = false
         deactivateAudioSessionIfIdle()
     }
 
     // MARK: - Queue & Audio Session Engine
+
+    private func ensureSynthesizer() -> AVSpeechSynthesizer {
+        if let synthesizer {
+            return synthesizer
+        }
+        let synth = AVSpeechSynthesizer()
+        synth.delegate = self
+        synthesizer = synth
+        return synth
+    }
 
     private func enqueue(
         _ cue: SpokenCue,
@@ -222,8 +245,8 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
 
         if interruptCurrent {
             queue.removeAll()
-            if synthesizer.isSpeaking {
-                synthesizer.stopSpeaking(at: .immediate)
+            if synthesizer?.isSpeaking == true {
+                synthesizer?.stopSpeaking(at: .immediate)
             }
         }
 
@@ -232,7 +255,7 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
     }
 
     private func drainQueueIfIdle() {
-        guard !isInterrupted, !synthesizer.isSpeaking else { return }
+        guard !isInterrupted, synthesizer?.isSpeaking != true else { return }
         let now = Date()
 
         while !queue.isEmpty {
@@ -256,6 +279,7 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
         }
 
         activateAudioSession()
+        let synth = ensureSynthesizer()
         let voice = resolveAVVoice()
         let rate = clampRate(pendingSettings?.speechRate ?? 0.47)
         let pitch = min(1.5, max(0.5, pendingSettings?.speechPitch ?? 1.0))
@@ -272,13 +296,23 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
             utterance.volume = volume
             utterance.preUtteranceDelay = seg.preUtteranceDelay
             utterance.postUtteranceDelay = seg.postUtteranceDelay
-            synthesizer.speak(utterance)
+            synth.speak(utterance)
         }
     }
 
     private func resolveAVVoice() -> AVSpeechSynthesisVoice? {
-        if activeVoice == nil {
-            refreshAvailableVoices(settings: pendingSettings)
+        if availableVoices.isEmpty {
+            let localeID = Locale.current.identifier
+            let descriptors = AVSpeechSynthesisVoice.speechVoices().map {
+                VoiceDescriptor(
+                    identifier: $0.identifier,
+                    name: $0.name,
+                    languageCode: $0.language,
+                    quality: Self.mapQuality($0.quality)
+                )
+            }
+            let ranked = VoiceRanker.rankVoices(descriptors, preferredLocaleIdentifier: localeID)
+            applyRankedVoices(ranked, settings: pendingSettings)
         }
         // Always select by explicit identifier (never AVSpeechSynthesisVoice(language:))
         if let id = activeVoice?.identifier, let voice = AVSpeechSynthesisVoice(identifier: id) {
@@ -309,7 +343,7 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
     }
 
     private func deactivateAudioSessionIfIdle() {
-        guard !synthesizer.isSpeaking, queue.isEmpty else { return }
+        guard synthesizer?.isSpeaking != true, queue.isEmpty else { return }
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         } catch {
@@ -317,7 +351,7 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
         }
     }
 
-    private func mapQuality(_ quality: AVSpeechSynthesisVoiceQuality) -> VoiceQualityRank {
+    private nonisolated static func mapQuality(_ quality: AVSpeechSynthesisVoiceQuality) -> VoiceQualityRank {
         switch quality {
         case .premium: return .premium
         case .enhanced: return .enhanced
@@ -338,8 +372,8 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
                 case .began:
                     self.isInterrupted = true
                     self.queue.removeAll()
-                    if self.synthesizer.isSpeaking {
-                        self.synthesizer.stopSpeaking(at: .immediate)
+                    if self.synthesizer?.isSpeaking == true {
+                        self.synthesizer?.stopSpeaking(at: .immediate)
                     }
                     self.isSpeaking = false
                     DiagnosticsLogger.shared.log(.lifecycle, "Audio session interrupted (paused speech)")
@@ -358,7 +392,7 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         Task { @MainActor in
-            if !self.synthesizer.isSpeaking {
+            if self.synthesizer?.isSpeaking != true {
                 self.drainQueueIfIdle()
             }
         }
@@ -366,7 +400,7 @@ final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
         Task { @MainActor in
-            if !self.synthesizer.isSpeaking {
+            if self.synthesizer?.isSpeaking != true {
                 self.drainQueueIfIdle()
             }
         }

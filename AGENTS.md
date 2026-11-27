@@ -16,7 +16,7 @@
 - **Diagnostics:** Log lifecycle, auth, location, recording, recovery, backup, and errors to `DiagnosticsLogger.shared` (rolling 2,000 entries, exportable as `.txt`).
 
 ## Current State
-- **Active Release:** v1.1 Update — Pushing Change 1 fix (`FullScreenActivityMapView`) + Change 2 (More Human-Sounding Voice: `SpeechService`, `PhraseComposer`, `VoiceSettingsView`, `UIBackgroundModes: audio`) as Run #13 (v1.1 #3).
-- **Last Green CI:** Run #11 (`46035577162`), commit `2df78d0`, runner `xcode-27`, `TrackerCoreTests` 34/34 passed, `RUNTests` 11/11 passed.
-- **CI Budget (v1.1):** 2 / 40 runs used (pushing #3).
-- **Next Step:** Verify Run #13 green (Change 1 + Change 2), then implement Change 3 (Fitness Section: 120+ exercise catalog, workout logging + autosave/recovery + rest timer, 9 templates, progress charts & PRs, timeline/calendar/insights integration).
+- **Active Release:** v1.1 Update — All Data Safety, Change 1 (Full-Screen Map), Change 2 (Natural Voice), and Change 3 (Fitness Section: 133 exercises, 9 templates, live logger, rest timer, PR badges, Progress charts, CSV export, History/Calendar/Goals integration) implemented; pushing Run #15 (v1.1 #5).
+- **Last Green CI:** Run #11 (`46035577162`), commit `2df78d0`. (Run #14 passed 43/43 `TrackerCoreTests` and 11/11 `RUNTests` but hung on simulator teardown due to eager `AVSpeechSynthesizer` in `SpeechService.init()`; fixed via lazy/async init.)
+- **CI Budget (v1.1):** 4 / 40 runs used (pushing #5).
+- **Next Step:** Verify Run #15 green, download `dist/RUN-1.1.ipa`, finalize `BUILD_LOG.md` & `AGENTS.md`, and deliver v1.1 final report + H2 install handoff.

@@ -4,8 +4,8 @@ import TrackerCore
 
 enum AppTab: Hashable {
     case record
+    case fitness
     case history
-    case routes
     case insights
     case settings
 }
@@ -19,6 +19,7 @@ struct RUNApp: App {
     @State private var diagnostics = DiagnosticsLogger.shared
     @State private var speechService = SpeechService.shared
     @State private var recorder = LocationRecordingService()
+    @State private var workoutManager = WorkoutSessionManager()
     @State private var heartRateMonitor = HeartRateMonitorService()
     @State private var barometer = BarometerService()
     @State private var didPerformStartupCheck = false
@@ -42,17 +43,17 @@ struct RUNApp: App {
                     }
                     .tag(AppTab.record)
 
+                FitnessHomeView()
+                    .tabItem {
+                        Label("Fitness", systemImage: "dumbbell.fill")
+                    }
+                    .tag(AppTab.fitness)
+
                 HistoryListView()
                     .tabItem {
                         Label("History", systemImage: "list.bullet.rectangle")
                     }
                     .tag(AppTab.history)
-
-                RoutesListView(selectedTab: $selectedTab)
-                    .tabItem {
-                        Label("Routes", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
-                    }
-                    .tag(AppTab.routes)
 
                 InsightsDashboardView()
                     .tabItem {
@@ -71,6 +72,7 @@ struct RUNApp: App {
             .environment(diagnostics)
             .environment(speechService)
             .environment(recorder)
+            .environment(workoutManager)
             .environment(heartRateMonitor)
             .environment(barometer)
             .task {
@@ -78,9 +80,13 @@ struct RUNApp: App {
                 didPerformStartupCheck = true
                 let info = AppBuildInfo.current()
                 diagnostics.log(.lifecycle, "Launched \(info.appName) \(info.versionDisplay) [\(info.commitSHA)]")
-                speechService.refreshAvailableVoices(settings: settings)
+                if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+                    speechService.refreshAvailableVoices(settings: settings)
+                }
                 configureRecorderSensorHooks()
                 recorder.checkForPendingRecovery()
+                ExerciseCatalogService.shared.seedBuiltInTemplatesIfNeeded(modelContext: sharedModelContainer.mainContext)
+                workoutManager.checkForUnfinishedWorkout(modelContext: sharedModelContainer.mainContext)
             }
             .onChange(of: settings.featureFlags.bleHeartRate) { _, enabled in
                 if !enabled {
@@ -104,7 +110,9 @@ struct RUNApp: App {
                 switch newPhase {
                 case .active:
                     diagnostics.log(.lifecycle, "Scene phase -> active")
-                    speechService.refreshAvailableVoices(settings: settings)
+                    if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+                        speechService.refreshAvailableVoices(settings: settings)
+                    }
                 case .inactive:
                     diagnostics.log(.lifecycle, "Scene phase -> inactive")
                     recorder.flushForBackgroundTransition()

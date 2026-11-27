@@ -729,6 +729,52 @@ enum DataTransferService {
         return url
     }
 
+    static func exportWorkoutsCSV(
+        modelContext: ModelContext,
+        weightUnit: WeightUnit
+    ) throws -> URL {
+        let sessions = ((try? modelContext.fetch(FetchDescriptor<SDWorkoutSession>(sortBy: [SortDescriptor(\.startDate, order: .reverse)]))) ?? [])
+            .filter(\.isCompleted)
+        guard !sessions.isEmpty else { throw DataTransferError.emptyActivityList }
+
+        let entries = (try? modelContext.fetch(FetchDescriptor<SDWorkoutExerciseEntry>(sortBy: [SortDescriptor(\.orderIndex)]))) ?? []
+        let sets = (try? modelContext.fetch(FetchDescriptor<SDSetEntry>(sortBy: [SortDescriptor(\.orderIndex)]))) ?? []
+
+        var rows: [WorkoutCSVRow] = []
+        for session in sessions {
+            let sessionEntries = entries.filter { $0.workoutSessionID == session.id }
+            for entry in sessionEntries {
+                let entrySets = sets.filter { $0.workoutExerciseEntryID == entry.id && $0.isCompleted }
+                let group = MuscleGroup(rawValue: entry.muscleGroupRaw) ?? .fullBody
+                for (idx, s) in entrySets.enumerated() {
+                    let isPR = s.isPRWeight || s.isPREstimated1RM || s.isPRReps || s.isPRVolume
+                    rows.append(
+                        WorkoutCSVRow(
+                            workoutDate: session.startDate,
+                            workoutTitle: session.title,
+                            workoutDurationSeconds: session.durationSeconds,
+                            exerciseName: entry.exerciseNameSnapshot,
+                            muscleGroup: group,
+                            setOrder: idx + 1,
+                            setType: SetType(rawValue: s.setTypeRaw) ?? .normal,
+                            weightKg: s.weightKg,
+                            reps: s.reps,
+                            durationSeconds: s.durationSeconds,
+                            rpe: s.rpe,
+                            isPR: isPR
+                        )
+                    )
+                }
+            }
+        }
+
+        let csvData = StrengthEngine.exportWorkoutsCSV(rows: rows, weightUnit: weightUnit)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("RUN-Workouts-\(filenameDateTag()).csv")
+        try csvData.write(to: url, options: .atomic)
+        DiagnosticsLogger.shared.log(.backup, "Exported workouts CSV (\(rows.count) sets)")
+        return url
+    }
+
     static func importGPXAsActivity(
         from url: URL,
         modelContext: ModelContext,

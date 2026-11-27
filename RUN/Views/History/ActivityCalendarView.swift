@@ -3,7 +3,9 @@ import TrackerCore
 
 struct ActivityCalendarView: View {
     let activities: [SDActivity]
+    var workoutSessions: [SDWorkoutSession] = []
     let unitSystem: UnitSystem
+    var weightUnit: WeightUnit = .kg
 
     @State private var displayedMonth: Date = Calendar.current.startOfMonth(for: Date())
     @State private var selectedDay: Date = Calendar.current.startOfDay(for: Date())
@@ -214,14 +216,29 @@ struct ActivityCalendarView: View {
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 8)
             } else {
-                ForEach(selectedDayActivities) { activity in
-                    NavigationLink(destination: ActivityDetailView(activity: activity)) {
-                        ActivityRowCard(activity: activity, unitSystem: unitSystem)
-                            .padding(12)
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                let sessionByLinkedID = Dictionary(
+                    uniqueKeysWithValues: workoutSessions.compactMap { s in
+                        s.linkedActivityID.map { ($0, s) }
                     }
-                    .buttonStyle(.plain)
+                )
+                ForEach(selectedDayActivities) { activity in
+                    if activity.activityType == .strength, let session = sessionByLinkedID[activity.id] {
+                        NavigationLink(destination: WorkoutDetailView(session: session)) {
+                            StrengthActivityRowCard(activity: activity, session: session, weightUnit: weightUnit)
+                                .padding(12)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        NavigationLink(destination: ActivityDetailView(activity: activity)) {
+                            ActivityRowCard(activity: activity, unitSystem: unitSystem)
+                                .padding(12)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
         }

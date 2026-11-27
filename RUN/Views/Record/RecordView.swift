@@ -15,6 +15,7 @@ struct RecordView: View {
     @State private var followUser = true
     @State private var lastCameraUpdateDate: Date?
     @State private var showingFullScreenMap = false
+    @State private var showingRoutesSheet = false
     @State private var showingFinishSheet = false
     @State private var showingDiscardAlert = false
     @State private var showingHeartRateSheet = false
@@ -57,6 +58,11 @@ struct RecordView: View {
             }
             .sheet(isPresented: $showingHeartRateSheet) {
                 heartRateSheet
+            }
+            .sheet(isPresented: $showingRoutesSheet) {
+                RoutesListView(selectedTab: .constant(.record)) {
+                    showingRoutesSheet = false
+                }
             }
             .sheet(item: recoverySheetBinding) { item in
                 recoveryPromptSheet(pending: item.session)
@@ -118,6 +124,18 @@ struct RecordView: View {
                 }
 
                 Spacer()
+
+                Button {
+                    showingRoutesSheet = true
+                } label: {
+                    Image(systemName: "point.topleft.down.curvedto.point.bottomright.up")
+                        .font(.caption.weight(.bold))
+                        .padding(7)
+                        .background(Color.secondary.opacity(0.15))
+                        .foregroundStyle(RunTheme.electricTeal)
+                        .clipShape(Circle())
+                }
+                .accessibilityLabel("Saved routes")
 
                 gpsQualityBadge
             }
