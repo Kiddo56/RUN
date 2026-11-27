@@ -59,7 +59,7 @@ struct PersonalHeatmapView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 filterPill(title: "All", type: nil)
-                ForEach(ActivityType.allCases) { type in
+                ForEach(ActivityType.gpsCases) { type in
                     filterPill(title: type.displayName, type: type)
                 }
             }

@@ -275,3 +275,350 @@ final class SDSection {
         self.createdAt = createdAt
     }
 }
+
+// MARK: - v2 Additive Strength & Fitness Models
+
+@Model
+final class SDCustomExercise {
+    @Attribute(.unique) var id: UUID
+    var slug: String
+    var name: String
+    var muscleGroupRaw: String
+    var primaryMusclesCSV: String
+    var secondaryMusclesCSV: String
+    var equipmentCSV: String
+    var mechanicRaw: String
+    var difficultyRaw: String
+    var trackingTypeRaw: String
+    var instructionsText: String
+    var tips: String
+    var commonMistakes: String
+    var createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        slug: String,
+        name: String,
+        muscleGroupRaw: String,
+        primaryMusclesCSV: String = "",
+        secondaryMusclesCSV: String = "",
+        equipmentCSV: String = "bodyweight",
+        mechanicRaw: String = "compound",
+        difficultyRaw: String = "intermediate",
+        trackingTypeRaw: String = "weightReps",
+        instructionsText: String = "",
+        tips: String = "",
+        commonMistakes: String = "",
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.slug = slug
+        self.name = name
+        self.muscleGroupRaw = muscleGroupRaw
+        self.primaryMusclesCSV = primaryMusclesCSV
+        self.secondaryMusclesCSV = secondaryMusclesCSV
+        self.equipmentCSV = equipmentCSV
+        self.mechanicRaw = mechanicRaw
+        self.difficultyRaw = difficultyRaw
+        self.trackingTypeRaw = trackingTypeRaw
+        self.instructionsText = instructionsText
+        self.tips = tips
+        self.commonMistakes = commonMistakes
+        self.createdAt = createdAt
+    }
+}
+
+@Model
+final class SDExercisePreference {
+    @Attribute(.unique) var exerciseSlug: String
+    var isFavorite: Bool
+    var personalNotes: String
+    var defaultRestSeconds: Int
+    var updatedAt: Date
+
+    init(
+        exerciseSlug: String,
+        isFavorite: Bool = false,
+        personalNotes: String = "",
+        defaultRestSeconds: Int = 0,
+        updatedAt: Date = Date()
+    ) {
+        self.exerciseSlug = exerciseSlug
+        self.isFavorite = isFavorite
+        self.personalNotes = personalNotes
+        self.defaultRestSeconds = defaultRestSeconds
+        self.updatedAt = updatedAt
+    }
+}
+
+@Model
+final class SDWorkoutSession {
+    @Attribute(.unique) var id: UUID
+    var title: String
+    var notes: String
+    var startDate: Date
+    var endDate: Date?
+    var durationSeconds: TimeInterval
+    var isCompleted: Bool
+    var templateID: UUID?
+    var linkedActivityID: UUID?
+    var totalVolumeKg: Double
+    var completedSetCount: Int
+    var exerciseCount: Int
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        notes: String = "",
+        startDate: Date = Date(),
+        endDate: Date? = nil,
+        durationSeconds: TimeInterval = 0,
+        isCompleted: Bool = false,
+        templateID: UUID? = nil,
+        linkedActivityID: UUID? = nil,
+        totalVolumeKg: Double = 0,
+        completedSetCount: Int = 0,
+        exerciseCount: Int = 0
+    ) {
+        self.id = id
+        self.title = title
+        self.notes = notes
+        self.startDate = startDate
+        self.endDate = endDate
+        self.durationSeconds = durationSeconds
+        self.isCompleted = isCompleted
+        self.templateID = templateID
+        self.linkedActivityID = linkedActivityID
+        self.totalVolumeKg = totalVolumeKg
+        self.completedSetCount = completedSetCount
+        self.exerciseCount = exerciseCount
+    }
+}
+
+@Model
+final class SDWorkoutExerciseEntry {
+    @Attribute(.unique) var id: UUID
+    var workoutSessionID: UUID
+    var exerciseSlug: String
+    var exerciseNameSnapshot: String
+    var muscleGroupRaw: String
+    var trackingTypeRaw: String
+    var orderIndex: Int
+    var restSeconds: Int
+    var notes: String
+
+    init(
+        id: UUID = UUID(),
+        workoutSessionID: UUID,
+        exerciseSlug: String,
+        exerciseNameSnapshot: String,
+        muscleGroupRaw: String,
+        trackingTypeRaw: String = "weightReps",
+        orderIndex: Int,
+        restSeconds: Int = 90,
+        notes: String = ""
+    ) {
+        self.id = id
+        self.workoutSessionID = workoutSessionID
+        self.exerciseSlug = exerciseSlug
+        self.exerciseNameSnapshot = exerciseNameSnapshot
+        self.muscleGroupRaw = muscleGroupRaw
+        self.trackingTypeRaw = trackingTypeRaw
+        self.orderIndex = orderIndex
+        self.restSeconds = restSeconds
+        self.notes = notes
+    }
+}
+
+@Model
+final class SDSetEntry {
+    @Attribute(.unique) var id: UUID
+    var workoutSessionID: UUID
+    var workoutExerciseEntryID: UUID
+    var exerciseSlug: String
+    var orderIndex: Int
+    var setTypeRaw: String
+    var weightKg: Double
+    var reps: Int
+    var durationSeconds: Int
+    var rpe: Double?
+    var isCompleted: Bool
+    var completedAt: Date?
+    var isPRWeight: Bool
+    var isPREstimated1RM: Bool
+    var isPRReps: Bool
+    var isPRVolume: Bool
+
+    init(
+        id: UUID = UUID(),
+        workoutSessionID: UUID,
+        workoutExerciseEntryID: UUID,
+        exerciseSlug: String,
+        orderIndex: Int,
+        setTypeRaw: String = "normal",
+        weightKg: Double = 0,
+        reps: Int = 0,
+        durationSeconds: Int = 0,
+        rpe: Double? = nil,
+        isCompleted: Bool = false,
+        completedAt: Date? = nil,
+        isPRWeight: Bool = false,
+        isPREstimated1RM: Bool = false,
+        isPRReps: Bool = false,
+        isPRVolume: Bool = false
+    ) {
+        self.id = id
+        self.workoutSessionID = workoutSessionID
+        self.workoutExerciseEntryID = workoutExerciseEntryID
+        self.exerciseSlug = exerciseSlug
+        self.orderIndex = orderIndex
+        self.setTypeRaw = setTypeRaw
+        self.weightKg = weightKg
+        self.reps = reps
+        self.durationSeconds = durationSeconds
+        self.rpe = rpe
+        self.isCompleted = isCompleted
+        self.completedAt = completedAt
+        self.isPRWeight = isPRWeight
+        self.isPREstimated1RM = isPREstimated1RM
+        self.isPRReps = isPRReps
+        self.isPRVolume = isPRVolume
+    }
+}
+
+@Model
+final class SDWorkoutTemplate {
+    @Attribute(.unique) var id: UUID
+    var name: String
+    var notes: String
+    var isBuiltIn: Bool
+    var builtInKey: String?
+    var createdAt: Date
+    var updatedAt: Date
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        notes: String = "",
+        isBuiltIn: Bool = false,
+        builtInKey: String? = nil,
+        createdAt: Date = Date(),
+        updatedAt: Date = Date()
+    ) {
+        self.id = id
+        self.name = name
+        self.notes = notes
+        self.isBuiltIn = isBuiltIn
+        self.builtInKey = builtInKey
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+@Model
+final class SDWorkoutTemplateItem {
+    @Attribute(.unique) var id: UUID
+    var templateID: UUID
+    var exerciseSlug: String
+    var exerciseNameSnapshot: String
+    var orderIndex: Int
+    var targetSets: Int
+    var targetRepsMin: Int
+    var targetRepsMax: Int
+    var targetDurationSeconds: Int
+    var defaultRestSeconds: Int
+    var notes: String
+
+    init(
+        id: UUID = UUID(),
+        templateID: UUID,
+        exerciseSlug: String,
+        exerciseNameSnapshot: String,
+        orderIndex: Int,
+        targetSets: Int = 3,
+        targetRepsMin: Int = 8,
+        targetRepsMax: Int = 12,
+        targetDurationSeconds: Int = 0,
+        defaultRestSeconds: Int = 90,
+        notes: String = ""
+    ) {
+        self.id = id
+        self.templateID = templateID
+        self.exerciseSlug = exerciseSlug
+        self.exerciseNameSnapshot = exerciseNameSnapshot
+        self.orderIndex = orderIndex
+        self.targetSets = targetSets
+        self.targetRepsMin = targetRepsMin
+        self.targetRepsMax = targetRepsMax
+        self.targetDurationSeconds = targetDurationSeconds
+        self.defaultRestSeconds = defaultRestSeconds
+        self.notes = notes
+    }
+}
+
+// MARK: - Versioned Schemas & Lightweight Migration Plan (v1 -> v2)
+
+enum RunSchemaV1: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(1, 0, 0) }
+    static var models: [any PersistentModel.Type] {
+        [
+            SDActivity.self,
+            SDGear.self,
+            SDGoal.self,
+            SDSavedRoute.self,
+            SDSection.self
+        ]
+    }
+}
+
+enum RunSchemaV2: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(2, 0, 0) }
+    static var models: [any PersistentModel.Type] {
+        [
+            SDActivity.self,
+            SDGear.self,
+            SDGoal.self,
+            SDSavedRoute.self,
+            SDSection.self,
+            SDCustomExercise.self,
+            SDExercisePreference.self,
+            SDWorkoutSession.self,
+            SDWorkoutExerciseEntry.self,
+            SDSetEntry.self,
+            SDWorkoutTemplate.self,
+            SDWorkoutTemplateItem.self
+        ]
+    }
+}
+
+enum RunMigrationPlan: SchemaMigrationPlan {
+    static var schemas: [any VersionedSchema.Type] {
+        [RunSchemaV1.self, RunSchemaV2.self]
+    }
+
+    static var stages: [MigrationStage] {
+        [
+            MigrationStage.lightweight(
+                fromVersion: RunSchemaV1.self,
+                toVersion: RunSchemaV2.self
+            )
+        ]
+    }
+}
+
+enum RunModelContainerFactory {
+    static func makeContainer(url: URL? = nil, inMemory: Bool = false) throws -> ModelContainer {
+        let schema = Schema(versionedSchema: RunSchemaV2.self)
+        let config: ModelConfiguration
+        if let url {
+            config = ModelConfiguration(schema: schema, url: url)
+        } else {
+            config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
+        }
+        return try ModelContainer(
+            for: schema,
+            migrationPlan: RunMigrationPlan.self,
+            configurations: [config]
+        )
+    }
+}

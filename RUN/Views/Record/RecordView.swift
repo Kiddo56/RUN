@@ -111,7 +111,7 @@ struct RecordView: View {
             if recorder.state == .idle {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(ActivityType.allCases) { type in
+                        ForEach(ActivityType.gpsCases) { type in
                             let selected = recorder.selectedActivityType == type
                             Button {
                                 recorder.setActivityType(type)

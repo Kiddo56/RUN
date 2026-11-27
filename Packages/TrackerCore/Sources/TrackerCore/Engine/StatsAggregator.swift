@@ -363,6 +363,9 @@ public enum StatsAggregator {
         if metricRaw == "movingTime" {
             return matching.reduce(0.0) { $0 + $1.movingTime }
         }
+        if metricRaw == "sessions" {
+            return Double(matching.count)
+        }
         return matching.reduce(0.0) { $0 + $1.distanceMeters }
     }
 }

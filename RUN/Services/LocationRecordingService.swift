@@ -373,7 +373,7 @@ final class LocationRecordingService: NSObject, CLLocationManagerDelegate {
             matchingGear = gearList.first(where: { !$0.isRetired && $0.isDefaultForRun })
         case .ride:
             matchingGear = gearList.first(where: { !$0.isRetired && $0.isDefaultForRide })
-        case .other:
+        case .other, .strength:
             matchingGear = nil
         }
 

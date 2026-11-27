@@ -28,6 +28,9 @@ enum DataTransferService {
         let goalsRestored: Int
         let routesRestored: Int
         let sectionsRestored: Int
+        let customExercisesRestored: Int
+        let workoutsRestored: Int
+        let templatesRestored: Int
     }
 
     static var gpxContentTypes: [UTType] {
@@ -50,6 +53,13 @@ enum DataTransferService {
         let goals = (try? modelContext.fetch(FetchDescriptor<SDGoal>())) ?? []
         let routes = (try? modelContext.fetch(FetchDescriptor<SDSavedRoute>())) ?? []
         let sections = (try? modelContext.fetch(FetchDescriptor<SDSection>())) ?? []
+        let customExercises = (try? modelContext.fetch(FetchDescriptor<SDCustomExercise>())) ?? []
+        let exercisePreferences = (try? modelContext.fetch(FetchDescriptor<SDExercisePreference>())) ?? []
+        let workoutSessions = (try? modelContext.fetch(FetchDescriptor<SDWorkoutSession>())) ?? []
+        let workoutEntries = (try? modelContext.fetch(FetchDescriptor<SDWorkoutExerciseEntry>())) ?? []
+        let setEntries = (try? modelContext.fetch(FetchDescriptor<SDSetEntry>())) ?? []
+        let workoutTemplates = (try? modelContext.fetch(FetchDescriptor<SDWorkoutTemplate>())) ?? []
+        let workoutTemplateItems = (try? modelContext.fetch(FetchDescriptor<SDWorkoutTemplateItem>())) ?? []
 
         var activityRecords: [BackupActivityRecord] = []
         activityRecords.reserveCapacity(activities.count)
@@ -150,6 +160,115 @@ enum DataTransferService {
             )
         }
 
+        let customExerciseRecords = customExercises.map {
+            BackupCustomExerciseRecord(
+                id: $0.id,
+                slug: $0.slug,
+                name: $0.name,
+                muscleGroupRaw: $0.muscleGroupRaw,
+                primaryMusclesCSV: $0.primaryMusclesCSV,
+                secondaryMusclesCSV: $0.secondaryMusclesCSV,
+                equipmentCSV: $0.equipmentCSV,
+                mechanicRaw: $0.mechanicRaw,
+                difficultyRaw: $0.difficultyRaw,
+                trackingTypeRaw: $0.trackingTypeRaw,
+                instructionsText: $0.instructionsText,
+                tips: $0.tips,
+                commonMistakes: $0.commonMistakes,
+                createdAt: $0.createdAt
+            )
+        }
+
+        let preferenceRecords = exercisePreferences.map {
+            BackupExercisePreferenceRecord(
+                exerciseSlug: $0.exerciseSlug,
+                isFavorite: $0.isFavorite,
+                personalNotes: $0.personalNotes,
+                defaultRestSeconds: $0.defaultRestSeconds,
+                updatedAt: $0.updatedAt
+            )
+        }
+
+        let workoutSessionRecords = workoutSessions.map {
+            BackupWorkoutSessionRecord(
+                id: $0.id,
+                title: $0.title,
+                notes: $0.notes,
+                startDate: $0.startDate,
+                endDate: $0.endDate,
+                durationSeconds: $0.durationSeconds,
+                isCompleted: $0.isCompleted,
+                templateID: $0.templateID,
+                linkedActivityID: $0.linkedActivityID,
+                totalVolumeKg: $0.totalVolumeKg,
+                completedSetCount: $0.completedSetCount,
+                exerciseCount: $0.exerciseCount
+            )
+        }
+
+        let workoutEntryRecords = workoutEntries.map {
+            BackupWorkoutExerciseEntryRecord(
+                id: $0.id,
+                workoutSessionID: $0.workoutSessionID,
+                exerciseSlug: $0.exerciseSlug,
+                exerciseNameSnapshot: $0.exerciseNameSnapshot,
+                muscleGroupRaw: $0.muscleGroupRaw,
+                trackingTypeRaw: $0.trackingTypeRaw,
+                orderIndex: $0.orderIndex,
+                restSeconds: $0.restSeconds,
+                notes: $0.notes
+            )
+        }
+
+        let setEntryRecords = setEntries.map {
+            BackupSetEntryRecord(
+                id: $0.id,
+                workoutSessionID: $0.workoutSessionID,
+                workoutExerciseEntryID: $0.workoutExerciseEntryID,
+                exerciseSlug: $0.exerciseSlug,
+                orderIndex: $0.orderIndex,
+                setTypeRaw: $0.setTypeRaw,
+                weightKg: $0.weightKg,
+                reps: $0.reps,
+                durationSeconds: $0.durationSeconds,
+                rpe: $0.rpe,
+                isCompleted: $0.isCompleted,
+                completedAt: $0.completedAt,
+                isPRWeight: $0.isPRWeight,
+                isPREstimated1RM: $0.isPREstimated1RM,
+                isPRReps: $0.isPRReps,
+                isPRVolume: $0.isPRVolume
+            )
+        }
+
+        let templateRecords = workoutTemplates.map {
+            BackupWorkoutTemplateRecord(
+                id: $0.id,
+                name: $0.name,
+                notes: $0.notes,
+                isBuiltIn: $0.isBuiltIn,
+                builtInKey: $0.builtInKey,
+                createdAt: $0.createdAt,
+                updatedAt: $0.updatedAt
+            )
+        }
+
+        let templateItemRecords = workoutTemplateItems.map {
+            BackupWorkoutTemplateItemRecord(
+                id: $0.id,
+                templateID: $0.templateID,
+                exerciseSlug: $0.exerciseSlug,
+                exerciseNameSnapshot: $0.exerciseNameSnapshot,
+                orderIndex: $0.orderIndex,
+                targetSets: $0.targetSets,
+                targetRepsMin: $0.targetRepsMin,
+                targetRepsMax: $0.targetRepsMax,
+                targetDurationSeconds: $0.targetDurationSeconds,
+                defaultRestSeconds: $0.defaultRestSeconds,
+                notes: $0.notes
+            )
+        }
+
         let backupSettings = BackupSettings(
             unitSystem: settings.unitSystem,
             featureFlags: settings.featureFlags,
@@ -159,7 +278,20 @@ enum DataTransferService {
             maxHorizontalAccuracyMeters: settings.maxHorizontalAccuracyMeters,
             elevationHysteresisMeters: settings.elevationHysteresisMeters,
             userWeightKg: settings.userWeightKg,
-            privacyHideRadiusMeters: settings.privacyHideRadiusMeters
+            privacyHideRadiusMeters: settings.privacyHideRadiusMeters,
+            weightUnit: settings.weightUnit,
+            keepScreenAwakeWhileRecording: settings.keepScreenAwakeWhileRecording,
+            keepScreenAwakeDuringWorkout: settings.keepScreenAwakeDuringWorkout,
+            selectedVoiceIdentifier: settings.selectedVoiceIdentifier,
+            speechRate: settings.speechRate,
+            speechPitch: settings.speechPitch,
+            speechVolume: settings.speechVolume,
+            cueEveryUnitEnabled: settings.cueEveryUnitEnabled,
+            cueEveryNMinutes: settings.cueEveryNMinutes,
+            cueOnLapEnabled: settings.cueOnLapEnabled,
+            cueOnPauseResumeEnabled: settings.cueOnPauseResumeEnabled,
+            cueOnGoalReachedEnabled: settings.cueOnGoalReachedEnabled,
+            defaultRestSeconds: settings.defaultRestSeconds
         )
 
         let envelope = BackupEnvelope(
@@ -171,15 +303,22 @@ enum DataTransferService {
             gear: gearRecords,
             goals: goalRecords,
             routes: routeRecords,
-            sections: sectionRecords
+            sections: sectionRecords,
+            customExercises: customExerciseRecords,
+            exercisePreferences: preferenceRecords,
+            workoutSessions: workoutSessionRecords,
+            workoutExerciseEntries: workoutEntryRecords,
+            setEntries: setEntryRecords,
+            workoutTemplates: templateRecords,
+            workoutTemplateItems: templateItemRecords
         )
 
         let data = try BackupCodec.encode(envelope)
         let dateTag = filenameDateTag()
-        let outURL = FileManager.default.temporaryDirectory.appendingPathComponent("RUN-Backup-v1-\(dateTag).json")
+        let outURL = FileManager.default.temporaryDirectory.appendingPathComponent("RUN-Backup-v\(BackupEnvelope.currentSchemaVersion)-\(dateTag).json")
         try data.write(to: outURL, options: .atomic)
         settings.lastBackupDate = Date()
-        DiagnosticsLogger.shared.log(.backup, "Exported full backup (\(activityRecords.count) activities, \(data.count) bytes)")
+        DiagnosticsLogger.shared.log(.backup, "Exported full v\(BackupEnvelope.currentSchemaVersion) backup (\(activityRecords.count) activities, \(workoutSessionRecords.count) workouts, \(data.count) bytes)")
         return outURL
     }
 
@@ -219,6 +358,13 @@ enum DataTransferService {
             for item in ((try? modelContext.fetch(FetchDescriptor<SDGoal>())) ?? []) { modelContext.delete(item) }
             for item in ((try? modelContext.fetch(FetchDescriptor<SDSavedRoute>())) ?? []) { modelContext.delete(item) }
             for item in ((try? modelContext.fetch(FetchDescriptor<SDSection>())) ?? []) { modelContext.delete(item) }
+            for item in ((try? modelContext.fetch(FetchDescriptor<SDCustomExercise>())) ?? []) { modelContext.delete(item) }
+            for item in ((try? modelContext.fetch(FetchDescriptor<SDExercisePreference>())) ?? []) { modelContext.delete(item) }
+            for item in ((try? modelContext.fetch(FetchDescriptor<SDWorkoutSession>())) ?? []) { modelContext.delete(item) }
+            for item in ((try? modelContext.fetch(FetchDescriptor<SDWorkoutExerciseEntry>())) ?? []) { modelContext.delete(item) }
+            for item in ((try? modelContext.fetch(FetchDescriptor<SDSetEntry>())) ?? []) { modelContext.delete(item) }
+            for item in ((try? modelContext.fetch(FetchDescriptor<SDWorkoutTemplate>())) ?? []) { modelContext.delete(item) }
+            for item in ((try? modelContext.fetch(FetchDescriptor<SDWorkoutTemplateItem>())) ?? []) { modelContext.delete(item) }
             try? modelContext.save()
         }
 
@@ -227,6 +373,13 @@ enum DataTransferService {
         let existingGoalIDs = Set(((try? modelContext.fetch(FetchDescriptor<SDGoal>())) ?? []).map(\.id))
         let existingRouteIDs = Set(((try? modelContext.fetch(FetchDescriptor<SDSavedRoute>())) ?? []).map(\.id))
         let existingSectionIDs = Set(((try? modelContext.fetch(FetchDescriptor<SDSection>())) ?? []).map(\.id))
+        let existingCustomExIDs = Set(((try? modelContext.fetch(FetchDescriptor<SDCustomExercise>())) ?? []).map(\.id))
+        let existingPrefSlugs = Set(((try? modelContext.fetch(FetchDescriptor<SDExercisePreference>())) ?? []).map(\.exerciseSlug))
+        let existingSessionIDs = Set(((try? modelContext.fetch(FetchDescriptor<SDWorkoutSession>())) ?? []).map(\.id))
+        let existingEntryIDs = Set(((try? modelContext.fetch(FetchDescriptor<SDWorkoutExerciseEntry>())) ?? []).map(\.id))
+        let existingSetIDs = Set(((try? modelContext.fetch(FetchDescriptor<SDSetEntry>())) ?? []).map(\.id))
+        let existingTemplateIDs = Set(((try? modelContext.fetch(FetchDescriptor<SDWorkoutTemplate>())) ?? []).map(\.id))
+        let existingTemplateItemIDs = Set(((try? modelContext.fetch(FetchDescriptor<SDWorkoutTemplateItem>())) ?? []).map(\.id))
 
         var actCount = 0
         for rec in envelope.activities where !existingActivityIDs.contains(rec.id) {
@@ -334,6 +487,128 @@ enum DataTransferService {
             sectionCount += 1
         }
 
+        var customExCount = 0
+        for rec in envelope.customExercises where !existingCustomExIDs.contains(rec.id) {
+            let ex = SDCustomExercise(
+                id: rec.id,
+                slug: rec.slug,
+                name: rec.name,
+                muscleGroupRaw: rec.muscleGroupRaw,
+                primaryMusclesCSV: rec.primaryMusclesCSV,
+                secondaryMusclesCSV: rec.secondaryMusclesCSV,
+                equipmentCSV: rec.equipmentCSV,
+                mechanicRaw: rec.mechanicRaw,
+                difficultyRaw: rec.difficultyRaw,
+                trackingTypeRaw: rec.trackingTypeRaw,
+                instructionsText: rec.instructionsText,
+                tips: rec.tips,
+                commonMistakes: rec.commonMistakes,
+                createdAt: rec.createdAt
+            )
+            modelContext.insert(ex)
+            customExCount += 1
+        }
+
+        for rec in envelope.exercisePreferences where !existingPrefSlugs.contains(rec.exerciseSlug) {
+            let pref = SDExercisePreference(
+                exerciseSlug: rec.exerciseSlug,
+                isFavorite: rec.isFavorite,
+                personalNotes: rec.personalNotes,
+                defaultRestSeconds: rec.defaultRestSeconds,
+                updatedAt: rec.updatedAt
+            )
+            modelContext.insert(pref)
+        }
+
+        var workoutCount = 0
+        for rec in envelope.workoutSessions where !existingSessionIDs.contains(rec.id) {
+            let session = SDWorkoutSession(
+                id: rec.id,
+                title: rec.title,
+                notes: rec.notes,
+                startDate: rec.startDate,
+                endDate: rec.endDate,
+                durationSeconds: rec.durationSeconds,
+                isCompleted: rec.isCompleted,
+                templateID: rec.templateID,
+                linkedActivityID: rec.linkedActivityID,
+                totalVolumeKg: rec.totalVolumeKg,
+                completedSetCount: rec.completedSetCount,
+                exerciseCount: rec.exerciseCount
+            )
+            modelContext.insert(session)
+            workoutCount += 1
+        }
+
+        for rec in envelope.workoutExerciseEntries where !existingEntryIDs.contains(rec.id) {
+            let entry = SDWorkoutExerciseEntry(
+                id: rec.id,
+                workoutSessionID: rec.workoutSessionID,
+                exerciseSlug: rec.exerciseSlug,
+                exerciseNameSnapshot: rec.exerciseNameSnapshot,
+                muscleGroupRaw: rec.muscleGroupRaw,
+                trackingTypeRaw: rec.trackingTypeRaw,
+                orderIndex: rec.orderIndex,
+                restSeconds: rec.restSeconds,
+                notes: rec.notes
+            )
+            modelContext.insert(entry)
+        }
+
+        for rec in envelope.setEntries where !existingSetIDs.contains(rec.id) {
+            let set = SDSetEntry(
+                id: rec.id,
+                workoutSessionID: rec.workoutSessionID,
+                workoutExerciseEntryID: rec.workoutExerciseEntryID,
+                exerciseSlug: rec.exerciseSlug,
+                orderIndex: rec.orderIndex,
+                setTypeRaw: rec.setTypeRaw,
+                weightKg: rec.weightKg,
+                reps: rec.reps,
+                durationSeconds: rec.durationSeconds,
+                rpe: rec.rpe,
+                isCompleted: rec.isCompleted,
+                completedAt: rec.completedAt,
+                isPRWeight: rec.isPRWeight,
+                isPREstimated1RM: rec.isPREstimated1RM,
+                isPRReps: rec.isPRReps,
+                isPRVolume: rec.isPRVolume
+            )
+            modelContext.insert(set)
+        }
+
+        var templateCount = 0
+        for rec in envelope.workoutTemplates where !existingTemplateIDs.contains(rec.id) {
+            let tmpl = SDWorkoutTemplate(
+                id: rec.id,
+                name: rec.name,
+                notes: rec.notes,
+                isBuiltIn: rec.isBuiltIn,
+                builtInKey: rec.builtInKey,
+                createdAt: rec.createdAt,
+                updatedAt: rec.updatedAt
+            )
+            modelContext.insert(tmpl)
+            templateCount += 1
+        }
+
+        for rec in envelope.workoutTemplateItems where !existingTemplateItemIDs.contains(rec.id) {
+            let item = SDWorkoutTemplateItem(
+                id: rec.id,
+                templateID: rec.templateID,
+                exerciseSlug: rec.exerciseSlug,
+                exerciseNameSnapshot: rec.exerciseNameSnapshot,
+                orderIndex: rec.orderIndex,
+                targetSets: rec.targetSets,
+                targetRepsMin: rec.targetRepsMin,
+                targetRepsMax: rec.targetRepsMax,
+                targetDurationSeconds: rec.targetDurationSeconds,
+                defaultRestSeconds: rec.defaultRestSeconds,
+                notes: rec.notes
+            )
+            modelContext.insert(item)
+        }
+
         settings.unitSystem = envelope.settings.unitSystem
         settings.featureFlags = envelope.settings.featureFlags
         settings.autoPauseEnabled = envelope.settings.autoPauseEnabled
@@ -343,19 +618,35 @@ enum DataTransferService {
         settings.elevationHysteresisMeters = envelope.settings.elevationHysteresisMeters
         settings.userWeightKg = envelope.settings.userWeightKg
         settings.privacyHideRadiusMeters = envelope.settings.privacyHideRadiusMeters
+        if let weightUnit = envelope.settings.weightUnit { settings.weightUnit = weightUnit }
+        if let v = envelope.settings.keepScreenAwakeWhileRecording { settings.keepScreenAwakeWhileRecording = v }
+        if let v = envelope.settings.keepScreenAwakeDuringWorkout { settings.keepScreenAwakeDuringWorkout = v }
+        if let v = envelope.settings.selectedVoiceIdentifier { settings.selectedVoiceIdentifier = v }
+        if let v = envelope.settings.speechRate { settings.speechRate = v }
+        if let v = envelope.settings.speechPitch { settings.speechPitch = v }
+        if let v = envelope.settings.speechVolume { settings.speechVolume = v }
+        if let v = envelope.settings.cueEveryUnitEnabled { settings.cueEveryUnitEnabled = v }
+        if let v = envelope.settings.cueEveryNMinutes { settings.cueEveryNMinutes = v }
+        if let v = envelope.settings.cueOnLapEnabled { settings.cueOnLapEnabled = v }
+        if let v = envelope.settings.cueOnPauseResumeEnabled { settings.cueOnPauseResumeEnabled = v }
+        if let v = envelope.settings.cueOnGoalReachedEnabled { settings.cueOnGoalReachedEnabled = v }
+        if let v = envelope.settings.defaultRestSeconds { settings.defaultRestSeconds = v }
         settings.lastBackupDate = Date()
 
         try modelContext.save()
         DiagnosticsLogger.shared.log(
             .backup,
-            "Restored backup: \(actCount) activities, \(gearCount) gear, \(goalCount) goals, \(routeCount) routes"
+            "Restored v\(envelope.schemaVersion) backup: \(actCount) activities, \(workoutCount) workouts, \(templateCount) templates, \(customExCount) custom exercises"
         )
         return RestoreSummary(
             activitiesRestored: actCount,
             gearRestored: gearCount,
             goalsRestored: goalCount,
             routesRestored: routeCount,
-            sectionsRestored: sectionCount
+            sectionsRestored: sectionCount,
+            customExercisesRestored: customExCount,
+            workoutsRestored: workoutCount,
+            templatesRestored: templateCount
         )
     }
 

@@ -166,7 +166,7 @@ struct DataAndBackupView: View {
                 )
                 presentAlert(
                     title: "Restore Complete",
-                    message: "Restored \(summary.activitiesRestored) activities, \(summary.gearRestored) gear, \(summary.goalsRestored) goals, and \(summary.routesRestored) routes."
+                    message: "Restored \(summary.activitiesRestored) activities, \(summary.workoutsRestored) workouts, \(summary.templatesRestored) routines, \(summary.customExercisesRestored) custom exercises, \(summary.gearRestored) gear, \(summary.goalsRestored) goals, and \(summary.routesRestored) routes."
                 )
             } catch {
                 presentAlert(title: "Restore Failed", message: error.localizedDescription)

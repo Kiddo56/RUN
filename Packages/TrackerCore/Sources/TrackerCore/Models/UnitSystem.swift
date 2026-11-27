@@ -49,6 +49,40 @@ public enum UnitSystem: String, CaseIterable, Codable, Sendable, Identifiable {
     }
 }
 
+public enum WeightUnit: String, CaseIterable, Codable, Sendable, Identifiable {
+    case kg
+    case lb
+
+    public static let poundsPerKilogram: Double = 2.20462262185
+
+    public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .kg: return "Kilograms (kg)"
+        case .lb: return "Pounds (lb)"
+        }
+    }
+
+    public var symbol: String { rawValue }
+
+    public func fromKilograms(_ kg: Double) -> Double {
+        guard kg.isFinite else { return 0 }
+        switch self {
+        case .kg: return kg
+        case .lb: return kg * Self.poundsPerKilogram
+        }
+    }
+
+    public func toKilograms(_ value: Double) -> Double {
+        guard value.isFinite else { return 0 }
+        switch self {
+        case .kg: return value
+        case .lb: return value / Self.poundsPerKilogram
+        }
+    }
+}
+
 public enum RunFormatter {
     public static func distanceValue(meters: Double, unit: UnitSystem) -> Double {
         guard meters.isFinite, meters >= 0 else { return 0 }
@@ -111,5 +145,21 @@ public enum RunFormatter {
             return String(format: "%d:%02d:%02d", hours, minutes, secs)
         }
         return String(format: "%02d:%02d", minutes, secs)
+    }
+
+    public static func weight(kg: Double, unit: WeightUnit) -> String {
+        let val = unit.fromKilograms(max(0, kg))
+        if abs(val - val.rounded()) < 0.05 {
+            return String(format: "%.0f %@", val.rounded(), unit.symbol)
+        }
+        return String(format: "%.1f %@", val, unit.symbol)
+    }
+
+    public static func volume(kg: Double, unit: WeightUnit) -> String {
+        let val = unit.fromKilograms(max(0, kg))
+        if val >= 1000 {
+            return String(format: "%.1fk %@", val / 1000.0, unit.symbol)
+        }
+        return String(format: "%.0f %@", val.rounded(), unit.symbol)
     }
 }

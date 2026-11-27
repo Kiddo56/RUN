@@ -16,7 +16,7 @@
 - **Diagnostics:** Log lifecycle, auth, location, recording, recovery, backup, and errors to `DiagnosticsLogger.shared` (rolling 2,000 entries, exportable as `.txt`).
 
 ## Current State
-- **Active Phase:** Phases 0–5 Complete (Ready for Sideloadly H2 Handoff)
-- **Last Green CI:** Run #10 (`45695169866`), commit `0530879`, runner `xcode-27` (Xcode 27.1 / Swift 6.4), `TrackerCoreTests` 31/31 passed, `RUNTests` 9/9 passed, `dist/RUN.ipa` (1,500,029 bytes, `com.kiddo56.run`, v1.0.0 build 10).
-- **CI Budget:** 10 / 80 runs used.
-- **Next Step:** Deliver final report & H2 click-by-click install instructions, wait for user `"done"`, then provide `TEST_CHECKLIST.md` highlights and bug-report workflow.
+- **Active Release:** v1.1 Update — Milestone 1 (Data Safety) implemented, pushing for CI verification before Change 1 (Full-Screen Map), Change 2 (Natural Voice), and Change 3 (Fitness Section).
+- **Last Green CI:** Run #10 (`45695169866`), commit `0530879`, runner `xcode-27` (Xcode 27.1 / Swift 6.4), `TrackerCoreTests` 31/31 passed, `RUNTests` 9/9 passed, `dist/RUN.ipa` (v1.0.0).
+- **CI Budget (v1.1):** 0 / 40 runs used (10 historical v1.0 runs).
+- **Next Step:** Verify CI green for v1.1 Data Safety (`RunSchemaV1 -> V2` migration + Backup v2 + `RUN-1.1.ipa`), then implement Change 1 (Full-Screen Map).

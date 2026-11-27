@@ -335,6 +335,7 @@ public enum TrackAnalyzer {
         case .ride: baseMET = 7.5
         case .walk: baseMET = 3.8
         case .hike: baseMET = 6.0
+        case .strength: baseMET = 5.0
         case .other: baseMET = 5.5
         }
         let climbBonusKcal = max(0, elevationGainMeters) * 0.12
@@ -353,12 +354,16 @@ public enum TrackAnalyzer {
             let hrRatio = min(1.0, max(0.1, (hr - 60.0) / 130.0))
             return minutes * hrRatio * exp(1.92 * hrRatio) * 0.45
         }
+        if activityType == .strength {
+            return minutes * 0.85
+        }
         let referenceSpeed: Double
         switch activityType {
         case .run: referenceSpeed = 3.3
         case .ride: referenceSpeed = 7.5
         case .walk: referenceSpeed = 1.4
         case .hike: referenceSpeed = 1.2
+        case .strength: referenceSpeed = 1.0
         case .other: referenceSpeed = 2.2
         }
         let intensity = min(2.0, max(0.35, averageSpeedMPS / referenceSpeed))

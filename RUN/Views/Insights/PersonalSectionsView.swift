@@ -185,7 +185,7 @@ private struct SectionBuilderSheet: View {
 
             HStack {
                 Picker("Type", selection: $activityType) {
-                    ForEach(ActivityType.allCases) { type in
+                    ForEach(ActivityType.gpsCases) { type in
                         Text(type.displayName).tag(type)
                     }
                 }

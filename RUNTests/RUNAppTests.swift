@@ -278,15 +278,7 @@ final class RUNAppTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let settings = AppSettingsStore(userDefaults: defaults)
-        let schema = Schema([
-            SDActivity.self,
-            SDGear.self,
-            SDGoal.self,
-            SDSavedRoute.self,
-            SDSection.self
-        ])
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: schema, configurations: [config])
+        let container = try RunModelContainerFactory.makeContainer(inMemory: true)
         let context = ModelContext(container)
 
         let t0 = Date(timeIntervalSince1970: 1_700_000_000)
@@ -423,5 +415,142 @@ final class RUNAppTests: XCTestCase {
         let barometer = BarometerService()
         XCTAssertFalse(barometer.isRunning)
         XCTAssertNil(barometer.fusedAltitudeMeters)
+    }
+
+    func testSwiftDataV1ToV2LightweightMigrationPreservesExistingData() throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("run_migration_\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let storeURL = tempDir.appendingPathComponent("run_v1.store")
+        let activityID = UUID()
+        let gearID = UUID()
+        let goalID = UUID()
+        let routeID = UUID()
+        let sectionID = UUID()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+
+        // 1. Create an on-disk store using the exact v1.0.0 schema (5 models) and persist real data.
+        do {
+            let v1Schema = Schema(versionedSchema: RunSchemaV1.self)
+            let v1Config = ModelConfiguration(schema: v1Schema, url: storeURL)
+            let v1Container = try ModelContainer(for: v1Schema, configurations: [v1Config])
+            let v1Context = ModelContext(v1Container)
+
+            v1Context.insert(SDGear(id: gearID, name: "Daily Trainers", brand: "Alpha", isDefaultForRun: true))
+            v1Context.insert(
+                SDActivity(
+                    id: activityID,
+                    activityType: .run,
+                    startDate: now,
+                    endDate: now.addingTimeInterval(1800),
+                    movingTime: 1800,
+                    elapsedTime: 1850,
+                    distanceMeters: 6200,
+                    elevationGainMeters: 42,
+                    title: "Legacy v1 Run",
+                    notes: "Must survive v1.1 update",
+                    gearID: gearID,
+                    trackFileName: "legacy.trk",
+                    pointCount: 120
+                )
+            )
+            v1Context.insert(SDGoal(id: goalID, title: "Weekly 25k", targetValue: 25_000))
+            v1Context.insert(SDSavedRoute(id: routeID, name: "River Loop", distanceMeters: 5000))
+            v1Context.insert(
+                SDSection(
+                    id: sectionID,
+                    name: "Bridge Sprint",
+                    startLatitude: 37.77,
+                    startLongitude: -122.41,
+                    endLatitude: 37.775,
+                    endLongitude: -122.41,
+                    expectedBearing: 0,
+                    distanceMeters: 550
+                )
+            )
+            try v1Context.save()
+        }
+
+        // 2. Re-open the exact same on-disk store with RunSchemaV2 + RunMigrationPlan.
+        let v2Container = try RunModelContainerFactory.makeContainer(url: storeURL)
+        let v2Context = ModelContext(v2Container)
+
+        let activities = try v2Context.fetch(FetchDescriptor<SDActivity>())
+        let gear = try v2Context.fetch(FetchDescriptor<SDGear>())
+        let goals = try v2Context.fetch(FetchDescriptor<SDGoal>())
+        let routes = try v2Context.fetch(FetchDescriptor<SDSavedRoute>())
+        let sections = try v2Context.fetch(FetchDescriptor<SDSection>())
+
+        XCTAssertEqual(activities.count, 1)
+        XCTAssertEqual(activities[0].id, activityID)
+        XCTAssertEqual(activities[0].title, "Legacy v1 Run")
+        XCTAssertEqual(activities[0].distanceMeters, 6200, accuracy: 0.1)
+        XCTAssertEqual(gear.first?.id, gearID)
+        XCTAssertEqual(goals.first?.id, goalID)
+        XCTAssertEqual(routes.first?.id, routeID)
+        XCTAssertEqual(sections.first?.id, sectionID)
+
+        // 3. Confirm additive v2 models work on the migrated store.
+        let customEx = SDCustomExercise(slug: "custom-box-jump", name: "Box Jump", muscleGroupRaw: "legs")
+        let workout = SDWorkoutSession(title: "First v1.1 Strength", startDate: now, isCompleted: true)
+        v2Context.insert(customEx)
+        v2Context.insert(workout)
+        try v2Context.save()
+
+        XCTAssertEqual(try v2Context.fetch(FetchDescriptor<SDCustomExercise>()).count, 1)
+        XCTAssertEqual(try v2Context.fetch(FetchDescriptor<SDWorkoutSession>()).count, 1)
+    }
+
+    func testBackupV2IncludesWorkoutsTemplatesAndCustomExercisesAndAcceptsV1() throws {
+        let tempRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("run_backup_v2_\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        let store = TrackFileStore(baseDirectory: tempRoot)
+        let suiteName = "run.backup.v2.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let settings = AppSettingsStore(userDefaults: defaults)
+        settings.weightUnit = .lb
+        let container = try RunModelContainerFactory.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let customEx = SDCustomExercise(slug: "custom-zercher", name: "Zercher Squat", muscleGroupRaw: "legs")
+        let pref = SDExercisePreference(exerciseSlug: "barbell-back-squat", isFavorite: true, personalNotes: "Belt on top sets", defaultRestSeconds: 150)
+        let workout = SDWorkoutSession(title: "Leg Day", startDate: now, endDate: now.addingTimeInterval(2400), durationSeconds: 2400, isCompleted: true, totalVolumeKg: 3500, completedSetCount: 6, exerciseCount: 2)
+        let entry = SDWorkoutExerciseEntry(workoutSessionID: workout.id, exerciseSlug: customEx.slug, exerciseNameSnapshot: customEx.name, muscleGroupRaw: "legs", orderIndex: 0)
+        let setEntry = SDSetEntry(workoutSessionID: workout.id, workoutExerciseEntryID: entry.id, exerciseSlug: customEx.slug, orderIndex: 0, weightKg: 80, reps: 5, isCompleted: true)
+        let tmpl = SDWorkoutTemplate(name: "My Custom Split", isBuiltIn: false)
+        let tmplItem = SDWorkoutTemplateItem(templateID: tmpl.id, exerciseSlug: customEx.slug, exerciseNameSnapshot: customEx.name, orderIndex: 0)
+
+        context.insert(customEx)
+        context.insert(pref)
+        context.insert(workout)
+        context.insert(entry)
+        context.insert(setEntry)
+        context.insert(tmpl)
+        context.insert(tmplItem)
+        try context.save()
+
+        let url = try DataTransferService.exportFullBackup(modelContext: context, settings: settings, appVersion: "1.1", fileStore: store)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let bytes = try Data(contentsOf: url)
+
+        let summary = try DataTransferService.restoreFullBackup(
+            data: bytes,
+            modelContext: context,
+            settings: settings,
+            replaceExisting: true,
+            fileStore: store
+        )
+        XCTAssertEqual(summary.customExercisesRestored, 1)
+        XCTAssertEqual(summary.workoutsRestored, 1)
+        XCTAssertEqual(summary.templatesRestored, 1)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<SDSetEntry>()).count, 1)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<SDExercisePreference>()).count, 1)
     }
 }

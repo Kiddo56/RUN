@@ -1,5 +1,12 @@
 # CHANGELOG.md
 
+## v1.1 (In Progress)
+### Data Safety & Release Prep
+- Introduced `RunSchemaV1` -> `RunSchemaV2` SwiftData `VersionedSchema` and `RunMigrationPlan` (lightweight migration) adding non-destructive strength & fitness models while keeping all v1.0.0 activities, gear, goals, routes, and sections intact.
+- Added automated on-disk v1-to-v2 SwiftData migration test in `RUNTests`.
+- Bumped backup/export envelope to schema `v2` (including workouts, templates, custom exercises, exercise preferences, and v1.1 settings) while maintaining full backward-compatible restore of `v1` backups.
+- Bumped app version to `1.1` and CI IPA deliverable to `dist/RUN-1.1.ipa`.
+
 ## v1.0.0 — Phase 5: Optional Feature-Flagged Extras & Documentation Release
 - Added pure-Swift Phase 5 engines and unit tests in `TrackerCore`:
   - `BLEHeartRateParser` for Bluetooth SIG Heart Rate Measurement (`0x2A37`, 8-bit & 16-bit BPM payloads).

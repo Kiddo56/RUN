@@ -12,6 +12,8 @@ enum AppTab: Hashable {
 
 @main
 struct RUNApp: App {
+    private let sharedModelContainer: ModelContainer
+
     @State private var selectedTab: AppTab = .record
     @State private var settings = AppSettingsStore()
     @State private var diagnostics = DiagnosticsLogger.shared
@@ -21,6 +23,14 @@ struct RUNApp: App {
     @State private var didPerformStartupCheck = false
 
     @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        do {
+            self.sharedModelContainer = try RunModelContainerFactory.makeContainer()
+        } catch {
+            fatalError("Failed to initialize SwiftData ModelContainer: \(error)")
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -96,13 +106,7 @@ struct RUNApp: App {
                 }
             }
         }
-        .modelContainer(for: [
-            SDActivity.self,
-            SDGear.self,
-            SDGoal.self,
-            SDSavedRoute.self,
-            SDSection.self
-        ])
+        .modelContainer(sharedModelContainer)
     }
 
     private func configureRecorderSensorHooks() {
