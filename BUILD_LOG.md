@@ -1,6 +1,6 @@
 # BUILD_LOG.md — CI Run Ledger
 
-**Budget:** v1.0 used `10 / 80` runs. **v1.1 Update Budget:** Soft limit 40 runs (`4 / 40` used).
+**Budget:** v1.0 used `10 / 80` runs. **v1.1 Update Budget:** Soft limit 40 runs (`5 / 40` used).
 
 | Run # | GitHub Run ID | Phase | Runner | Commit | Result | Notes |
 |------:|--------------:|-------|--------|--------|--------|-------|
@@ -18,3 +18,4 @@
 | 12 (v1.1 #2) | `46037567122` | v1.1 Change 1 | `xcode-27` | `52b18b6` | **Failed** | `TrackerCoreTests` passed; `FullScreenActivityMapView.swift:200` used `sample.paceSecondsPerMeter` instead of `1.0 / sample.speedMPS`. Fixed in Run #13. |
 | 13 (v1.1 #3) | `46039039743` | v1.1 Change 1+2 | `xcode-27` | `8a35624` | **Failed** | `PhraseComposer.swift` called static `spoken*` helpers without `Self.` inside `mutating` instance methods. Fixed in Run #14. |
 | 14 (v1.1 #4) | `46039506052` | v1.1 Change 2 + Core | `xcode-27` (`iPhone 17e` iOS 27.2) | `7f1b26b` | **Failed** | `TrackerCoreTests` 43/43 & `RUNAppTests` 11/11 passed (0 failures), but eager `AVSpeechSynthesizer` + `speechVoices()` inside `SpeechService.init()` stalled Simulator host teardown (`The test runner hung before establishing connection`). Fixed by lazy `AVSpeechSynthesizer` + off-main-thread `speechVoices()` enumeration. |
+| 15 (v1.1 #5) | `46042639158` | v1.1 Final (All Changes) | `xcode-27` (`iPhone 17e` iOS 27.2) | `d7e359b` | **Success** | `TrackerCoreTests` 43/43 passed, `RUNTests` 12/12 passed (incl. on-disk v1->v2 migration, v2/v1 backup, 133-exercise bundle, 9 templates, workout->Strength->CSV), `dist/RUN-1.1.ipa` (2,127,768 bytes, `com.kiddo56.run`, v1.1 build 15, SHA `d7e359b`, `UIBackgroundModes=[location, audio, bluetooth-central]`). Duration 20m22s. |

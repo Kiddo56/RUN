@@ -1,6 +1,6 @@
 # CHANGELOG.md
 
-## v1.1 (In Progress)
+## v1.1 — Full-Screen Map, Natural Voice & Strength Fitness Section
 ### Data Safety & Release Prep
 - Introduced `RunSchemaV1` -> `RunSchemaV2` SwiftData `VersionedSchema` and `RunMigrationPlan` (lightweight migration) adding non-destructive strength & fitness models while keeping all v1.0.0 activities, gear, goals, routes, and sections intact.
 - Added automated on-disk v1-to-v2 SwiftData migration test in `RUNTests`.

@@ -16,7 +16,7 @@
 - **Diagnostics:** Log lifecycle, auth, location, recording, recovery, backup, and errors to `DiagnosticsLogger.shared` (rolling 2,000 entries, exportable as `.txt`).
 
 ## Current State
-- **Active Release:** v1.1 Update — All Data Safety, Change 1 (Full-Screen Map), Change 2 (Natural Voice), and Change 3 (Fitness Section: 133 exercises, 9 templates, live logger, rest timer, PR badges, Progress charts, CSV export, History/Calendar/Goals integration) implemented; pushing Run #15 (v1.1 #5).
-- **Last Green CI:** Run #11 (`46035577162`), commit `2df78d0`. (Run #14 passed 43/43 `TrackerCoreTests` and 11/11 `RUNTests` but hung on simulator teardown due to eager `AVSpeechSynthesizer` in `SpeechService.init()`; fixed via lazy/async init.)
-- **CI Budget (v1.1):** 4 / 40 runs used (pushing #5).
-- **Next Step:** Verify Run #15 green, download `dist/RUN-1.1.ipa`, finalize `BUILD_LOG.md` & `AGENTS.md`, and deliver v1.1 final report + H2 install handoff.
+- **Active Release:** v1.1 Update Complete (`dist/RUN-1.1.ipa` verified on disk, ready for H2 install handoff).
+- **Last Green CI:** Run #15 (`46042639158`), commit `d7e359b`, runner `xcode-27` (Xcode 27.1 / Swift 6.4), `TrackerCoreTests` 43/43 passed, `RUNTests` 12/12 passed, `dist/RUN-1.1.ipa` (2,127,768 bytes, `com.kiddo56.run`, v1.1 build 15, `exercises.json` 133 exercises).
+- **CI Budget (v1.1):** 5 / 40 runs used.
+- **Next Step:** Deliver v1.1 final report + H2 install handoff and wait for user `"done"` and field feedback.
