@@ -7,6 +7,11 @@
 - Bumped backup/export envelope to schema `v2` (including workouts, templates, custom exercises, exercise preferences, and v1.1 settings) while maintaining full backward-compatible restore of `v1` backups.
 - Bumped app version to `1.1` and CI IPA deliverable to `dist/RUN-1.1.ipa`.
 
+### Change 1: Full-Screen Map
+- Added expandable full-screen recording map (`FullScreenRecordMapView`) with translucent HUD (moving time, distance, pace/speed, Pause/Resume, and confirmation-guarded Finish), recenter & follow modes (`Free Pan` / `Follow` / `Heading`), `MapStyle` toggle (`Standard` / `Hybrid` / `Satellite`), zoom-to-whole-route, compass, scale, start pin, and km/mile distance milestone markers.
+- Added expandable full-screen activity detail map (`FullScreenActivityMapView`) preserving pace/speed route coloring, km/mile markers, and live interactive route scrubbing synced with Activity Detail charts.
+- Added `TrackMapHelper` in `TrackerCore` for polyline downsampling, interpolated km/mile markers, bounding regions, and camera update throttling, plus `ScreenAwakeController` ("Keep Screen Awake While Recording", default OFF, respecting iOS Low Power Mode).
+
 ## v1.0.0 — Phase 5: Optional Feature-Flagged Extras & Documentation Release
 - Added pure-Swift Phase 5 engines and unit tests in `TrackerCore`:
   - `BLEHeartRateParser` for Bluetooth SIG Heart Rate Measurement (`0x2A37`, 8-bit & 16-bit BPM payloads).

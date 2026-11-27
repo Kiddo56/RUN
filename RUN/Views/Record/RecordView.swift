@@ -13,6 +13,8 @@ struct RecordView: View {
 
     @State private var cameraPosition: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var followUser = true
+    @State private var lastCameraUpdateDate: Date?
+    @State private var showingFullScreenMap = false
     @State private var showingFinishSheet = false
     @State private var showingDiscardAlert = false
     @State private var showingHeartRateSheet = false
@@ -67,8 +69,20 @@ struct RecordView: View {
             } message: {
                 Text("This recording has not been saved and will be permanently removed.")
             }
+            .fullScreenCover(isPresented: $showingFullScreenMap) {
+                FullScreenRecordMapView {
+                    finishTitle = recorder.defaultTitle(for: recorder.selectedActivityType)
+                    finishNotes = ""
+                    showingFinishSheet = true
+                }
+            }
             .onChange(of: recorder.latestCoordinate?.latitude) { _, _ in
                 guard followUser, let coord = recorder.latestCoordinate else { return }
+                let now = Date()
+                if TrackMapHelper.shouldThrottleCameraUpdate(lastUpdate: lastCameraUpdateDate, now: now, minimumIntervalSeconds: 1.5) {
+                    return
+                }
+                lastCameraUpdateDate = now
                 cameraPosition = .region(
                     MKCoordinateRegion(
                         center: coord,
@@ -333,7 +347,13 @@ struct RecordView: View {
                         .tint(RunTheme.emerald)
                 }
                 if recorder.routeCoordinates.count >= 2 {
-                    MapPolyline(coordinates: recorder.routeCoordinates)
+                    let preview = recorder.routeCoordinates.map {
+                        PreviewCoordinate(latitude: $0.latitude, longitude: $0.longitude)
+                    }
+                    let sampled = TrackMapHelper.downsample(preview, maxPoints: 300).map {
+                        CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+                    }
+                    MapPolyline(coordinates: sampled)
                         .stroke(RunTheme.electricTeal, lineWidth: 5)
                 }
             }
@@ -350,22 +370,38 @@ struct RecordView: View {
             )
             .accessibilityIdentifier("record.map")
 
-            Button {
-                followUser.toggle()
-                if followUser {
-                    cameraPosition = .userLocation(fallback: .automatic)
+            VStack(spacing: 8) {
+                Button {
+                    showingFullScreenMap = true
+                } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RunTheme.electricTeal)
+                        .padding(10)
+                        .background(RunTheme.hudSurface.opacity(0.92))
+                        .clipShape(Circle())
+                        .shadow(radius: 4)
                 }
-            } label: {
-                Image(systemName: followUser ? "location.fill" : "location")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(followUser ? RunTheme.midnightSlate : RunTheme.electricTeal)
-                    .padding(10)
-                    .background(followUser ? RunTheme.electricTeal : RunTheme.hudSurface.opacity(0.9))
-                    .clipShape(Circle())
-                    .shadow(radius: 4)
+                .accessibilityLabel("Expand full-screen map")
+
+                Button {
+                    followUser.toggle()
+                    if followUser {
+                        lastCameraUpdateDate = nil
+                        cameraPosition = .userLocation(fallback: .automatic)
+                    }
+                } label: {
+                    Image(systemName: followUser ? "location.fill" : "location")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(followUser ? RunTheme.midnightSlate : RunTheme.electricTeal)
+                        .padding(10)
+                        .background(followUser ? RunTheme.electricTeal : RunTheme.hudSurface.opacity(0.9))
+                        .clipShape(Circle())
+                        .shadow(radius: 4)
+                }
+                .accessibilityLabel(followUser ? "Following your location" : "Center on your location")
             }
             .padding(10)
-            .accessibilityLabel(followUser ? "Following your location" : "Center on your location")
         }
     }
 

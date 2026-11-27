@@ -16,7 +16,7 @@
 - **Diagnostics:** Log lifecycle, auth, location, recording, recovery, backup, and errors to `DiagnosticsLogger.shared` (rolling 2,000 entries, exportable as `.txt`).
 
 ## Current State
-- **Active Release:** v1.1 Update — Milestone 1 (Data Safety) implemented, pushing for CI verification before Change 1 (Full-Screen Map), Change 2 (Natural Voice), and Change 3 (Fitness Section).
-- **Last Green CI:** Run #10 (`45695169866`), commit `0530879`, runner `xcode-27` (Xcode 27.1 / Swift 6.4), `TrackerCoreTests` 31/31 passed, `RUNTests` 9/9 passed, `dist/RUN.ipa` (v1.0.0).
-- **CI Budget (v1.1):** 0 / 40 runs used (10 historical v1.0 runs).
-- **Next Step:** Verify CI green for v1.1 Data Safety (`RunSchemaV1 -> V2` migration + Backup v2 + `RUN-1.1.ipa`), then implement Change 1 (Full-Screen Map).
+- **Active Release:** v1.1 Update — Data Safety GREEN (Run #11); pushing Change 1 (Full-Screen Map) as Run #12 (v1.1 #2).
+- **Last Green CI:** Run #11 (`46035577162`), commit `2df78d0`, runner `xcode-27`, `TrackerCoreTests` 34/34 passed, `RUNTests` 11/11 passed (on-disk v1->v2 SwiftData migration verified), `RUN-1.1.ipa` packaged.
+- **CI Budget (v1.1):** 1 / 40 runs used (pushing #2).
+- **Next Step:** Verify Change 1 CI green, then implement Change 2 (More Human-Sounding Voice) and Change 3 (Fitness Section).

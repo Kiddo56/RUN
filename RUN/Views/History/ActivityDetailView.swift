@@ -22,6 +22,7 @@ struct ActivityDetailView: View {
     @State private var showingTrimSheet = false
     @State private var showingMergeSheet = false
     @State private var showingShareSheet = false
+    @State private var showingFullScreenMap = false
     @State private var exportedGPXURL: URL?
     @State private var showingGPXExportSheet = false
     @State private var showingDeleteConfirm = false
@@ -144,6 +145,15 @@ struct ActivityDetailView: View {
         .sheet(isPresented: $showingShareSheet) {
             ShareCardSheet(activity: activity, points: points)
         }
+        .fullScreenCover(isPresented: $showingFullScreenMap) {
+            FullScreenActivityMapView(
+                activity: activity,
+                points: points,
+                coloredSegments: coloredSegments,
+                chartSamples: chartSamples,
+                scrubbedDistanceUnit: $scrubbedDistanceUnit
+            )
+        }
         .sheet(isPresented: $showingGPXExportSheet) {
             NavigationStack {
                 VStack(spacing: 18) {
@@ -219,51 +229,69 @@ struct ActivityDetailView: View {
                     .foregroundStyle(RunTheme.coral)
             }
 
-            Map(position: $cameraPosition) {
-                ForEach(coloredSegments) { segment in
-                    let coords = segment.coordinates.map {
-                        CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+            ZStack(alignment: .bottomTrailing) {
+                Map(position: $cameraPosition) {
+                    ForEach(coloredSegments) { segment in
+                        let coords = segment.coordinates.map {
+                            CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+                        }
+                        if coords.count >= 2 {
+                            MapPolyline(coordinates: coords)
+                                .stroke(segmentColor(intensity: segment.intensityNormalized), lineWidth: 5)
+                        }
                     }
-                    if coords.count >= 2 {
-                        MapPolyline(coordinates: coords)
-                            .stroke(segmentColor(intensity: segment.intensityNormalized), lineWidth: 5)
+
+                    if let first = points.first {
+                        Marker("Start", systemImage: "flag.fill", coordinate: CLLocationCoordinate2D(latitude: first.latitude, longitude: first.longitude))
+                            .tint(RunTheme.emerald)
+                    }
+
+                    if let last = points.last, points.count > 1 {
+                        Marker("Finish", systemImage: "flag.checkered", coordinate: CLLocationCoordinate2D(latitude: last.latitude, longitude: last.longitude))
+                            .tint(RunTheme.coral)
+                    }
+
+                    if let selected = selectedSample {
+                        Annotation(
+                            "Inspect",
+                            coordinate: CLLocationCoordinate2D(latitude: selected.latitude, longitude: selected.longitude)
+                        ) {
+                            Circle()
+                                .fill(RunTheme.amber)
+                                .frame(width: 16, height: 16)
+                                .overlay(Circle().stroke(.white, lineWidth: 3))
+                                .shadow(radius: 4)
+                        }
                     }
                 }
-
-                if let first = points.first {
-                    Marker("Start", systemImage: "flag.fill", coordinate: CLLocationCoordinate2D(latitude: first.latitude, longitude: first.longitude))
-                        .tint(RunTheme.emerald)
+                .mapStyle(.standard(elevation: .realistic))
+                .mapControls {
+                    MapCompass()
+                    MapScaleView()
                 }
+                .frame(height: 260)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(RunTheme.hudBorder.opacity(0.45), lineWidth: 1)
+                )
 
-                if let last = points.last, points.count > 1 {
-                    Marker("Finish", systemImage: "flag.checkered", coordinate: CLLocationCoordinate2D(latitude: last.latitude, longitude: last.longitude))
-                        .tint(RunTheme.coral)
-                }
-
-                if let selected = selectedSample {
-                    Annotation(
-                        "Inspect",
-                        coordinate: CLLocationCoordinate2D(latitude: selected.latitude, longitude: selected.longitude)
-                    ) {
-                        Circle()
-                            .fill(RunTheme.amber)
-                            .frame(width: 16, height: 16)
-                            .overlay(Circle().stroke(.white, lineWidth: 3))
+                if points.count >= 2 {
+                    Button {
+                        showingFullScreenMap = true
+                    } label: {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(RunTheme.electricTeal)
+                            .padding(10)
+                            .background(RunTheme.hudSurface.opacity(0.92))
+                            .clipShape(Circle())
                             .shadow(radius: 4)
                     }
+                    .padding(10)
+                    .accessibilityLabel("Expand full-screen activity map")
                 }
             }
-            .mapStyle(.standard(elevation: .realistic))
-            .mapControls {
-                MapCompass()
-                MapScaleView()
-            }
-            .frame(height: 260)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(RunTheme.hudBorder.opacity(0.45), lineWidth: 1)
-            )
 
             HStack(spacing: 8) {
                 Text(activity.activityType.prefersSpeedOverPace ? "Speed:" : "Pace:")

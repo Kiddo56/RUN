@@ -91,6 +91,12 @@ struct RUNApp: App {
                     barometer.startSession()
                 }
             }
+            .onChange(of: recorder.state.isActiveSession) { _, isActive in
+                ScreenAwakeController.shared.setRecordingAwake(isActive && settings.keepScreenAwakeWhileRecording)
+            }
+            .onChange(of: settings.keepScreenAwakeWhileRecording) { _, keepAwake in
+                ScreenAwakeController.shared.setRecordingAwake(recorder.state.isActiveSession && keepAwake)
+            }
             .onChange(of: scenePhase) { _, newPhase in
                 switch newPhase {
                 case .active:

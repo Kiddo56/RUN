@@ -55,6 +55,7 @@ struct SettingsView: View {
 
                 Section {
                     Toggle("Auto-Pause When Stopped", isOn: $bindableSettings.autoPauseEnabled)
+                    Toggle("Keep Screen Awake While Recording", isOn: $bindableSettings.keepScreenAwakeWhileRecording)
                     Toggle("Spoken Split & Status Cues", isOn: $bindableSettings.audioCuesEnabled)
                     Toggle("Haptic Feedback", isOn: $bindableSettings.hapticsEnabled)
 
@@ -81,7 +82,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Recording Preferences")
                 } footer: {
-                    Text("GPS fixes worse than the accuracy threshold are filtered out automatically.")
+                    Text("GPS fixes worse than the accuracy threshold are filtered out automatically. Keeping the screen awake uses extra battery and pauses automatically in iOS Low Power Mode.")
                 }
 
                 Section {
