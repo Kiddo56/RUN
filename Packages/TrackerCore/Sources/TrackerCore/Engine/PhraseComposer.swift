@@ -295,11 +295,11 @@ public struct PhraseComposer: Sendable {
     ) -> SpokenCue {
         splitCueCount += 1
         let unitWord = (unit == .metric) ? "kilometre" : "mile"
-        let indexWord = spokenInteger(splitIndex)
+        let indexWord = Self.spokenInteger(splitIndex)
         let ratePhrase = type.prefersSpeedOverPace
-            ? spokenSpeed(metersPerSecond: splitSpeedMPS, unit: unit)
-            : spokenPace(secondsPerMeter: splitPaceSecondsPerMeter, unit: unit)
-        let timePhrase = spokenDuration(seconds: totalMovingTime)
+            ? Self.spokenSpeed(metersPerSecond: splitSpeedMPS, unit: unit)
+            : Self.spokenPace(secondsPerMeter: splitPaceSecondsPerMeter, unit: unit)
+        let timePhrase = Self.spokenDuration(seconds: totalMovingTime)
 
         let templates: [[SpokenSegment]] = [
             [
@@ -339,18 +339,18 @@ public struct PhraseComposer: Sendable {
         unit: UnitSystem
     ) -> SpokenCue {
         let mins = max(1, Int((movingTime / 60.0).rounded()))
-        let distPhrase = spokenDistance(meters: distanceMeters, unit: unit)
+        let distPhrase = Self.spokenDistance(meters: distanceMeters, unit: unit)
         let ratePhrase = type.prefersSpeedOverPace
-            ? spokenSpeed(metersPerSecond: currentSpeedMPS, unit: unit)
-            : spokenPace(secondsPerMeter: currentPaceSecondsPerMeter, unit: unit)
+            ? Self.spokenSpeed(metersPerSecond: currentSpeedMPS, unit: unit)
+            : Self.spokenPace(secondsPerMeter: currentPaceSecondsPerMeter, unit: unit)
 
         let templates: [[SpokenSegment]] = [
             [
-                SpokenSegment(text: "\(spokenInteger(mins)) minutes in.", postUtteranceDelay: 0.14),
+                SpokenSegment(text: "\(Self.spokenInteger(mins)) minutes in.", postUtteranceDelay: 0.14),
                 SpokenSegment(text: "Distance, \(distPhrase), at \(ratePhrase).")
             ],
             [
-                SpokenSegment(text: "Time check, \(spokenInteger(mins)) minutes.", postUtteranceDelay: 0.14),
+                SpokenSegment(text: "Time check, \(Self.spokenInteger(mins)) minutes.", postUtteranceDelay: 0.14),
                 SpokenSegment(text: "You've covered \(distPhrase).")
             ]
         ]
@@ -364,12 +364,12 @@ public struct PhraseComposer: Sendable {
         lapDuration: TimeInterval,
         unit: UnitSystem
     ) -> SpokenCue {
-        let lapNum = spokenInteger(lapNumber)
-        let dist = spokenDistance(meters: lapDistanceMeters, unit: unit)
-        let dur = spokenDuration(seconds: lapDuration)
+        let lapNum = Self.spokenInteger(lapNumber)
+        let dist = Self.spokenDistance(meters: lapDistanceMeters, unit: unit)
+        let dur = Self.spokenDuration(seconds: lapDuration)
         let templates: [String] = [
             "Lap \(lapNum) marked, \(dist) in \(dur).",
-            "Starting lap \(spokenInteger(lapNumber + 1)). Previous lap was \(dur)."
+            "Starting lap \(Self.spokenInteger(lapNumber + 1)). Previous lap was \(dur)."
         ]
         let idx = nextTemplateIndex(for: .lap, count: templates.count)
         return SpokenCue(kind: .lap, segments: [SpokenSegment(text: templates[idx])], templateIndex: idx)
@@ -380,8 +380,8 @@ public struct PhraseComposer: Sendable {
         movingTime: TimeInterval,
         unit: UnitSystem
     ) -> SpokenCue {
-        let dist = spokenDistance(meters: distanceMeters, unit: unit)
-        let dur = spokenDuration(seconds: movingTime)
+        let dist = Self.spokenDistance(meters: distanceMeters, unit: unit)
+        let dur = Self.spokenDuration(seconds: movingTime)
         let templates: [[SpokenSegment]] = [
             [
                 SpokenSegment(text: "Activity complete.", postUtteranceDelay: 0.18),
@@ -400,10 +400,10 @@ public struct PhraseComposer: Sendable {
         let approxMeters = Int((distanceMeters / 10.0).rounded()) * 10
         let distPhrase: String
         if unit == .metric {
-            distPhrase = "\(spokenInteger(max(10, approxMeters))) metres"
+            distPhrase = "\(Self.spokenInteger(max(10, approxMeters))) metres"
         } else {
             let feet = max(30, Int(((distanceMeters * 3.28084) / 10.0).rounded()) * 10)
-            distPhrase = "\(spokenInteger(feet)) feet"
+            distPhrase = "\(Self.spokenInteger(feet)) feet"
         }
         let templates = [
             "Heads up, you're off route by about \(distPhrase).",
@@ -451,8 +451,8 @@ public struct PhraseComposer: Sendable {
     }
 
     public mutating func composeWorkoutComplete(durationSeconds: TimeInterval, completedSets: Int) -> SpokenCue {
-        let dur = spokenDuration(seconds: durationSeconds)
-        let setsWord = spokenInteger(completedSets)
+        let dur = Self.spokenDuration(seconds: durationSeconds)
+        let setsWord = Self.spokenInteger(completedSets)
         let templates = [
             "Strength workout complete. \(setsWord) sets in \(dur). Great session.",
             "Nice lifting. You logged \(setsWord) sets over \(dur)."

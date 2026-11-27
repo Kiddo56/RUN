@@ -1,6 +1,6 @@
 # BUILD_LOG.md — CI Run Ledger
 
-**Budget:** v1.0 used `10 / 80` runs. **v1.1 Update Budget:** Soft limit 40 runs (`2 / 40` used).
+**Budget:** v1.0 used `10 / 80` runs. **v1.1 Update Budget:** Soft limit 40 runs (`3 / 40` used).
 
 | Run # | GitHub Run ID | Phase | Runner | Commit | Result | Notes |
 |------:|--------------:|-------|--------|--------|--------|-------|
@@ -16,3 +16,4 @@
 | 10 | `45695169866` | Phase 5 | `xcode-27` (`iPhone 17e` iOS 27.2) | `0530879` | **Success** | `TrackerCoreTests` 31/31 passed, `RUNTests` 9/9 passed, `dist/RUN.ipa` (1,500,029 bytes) verified (`com.kiddo56.run`, v1.0.0 build 10, SHA `0530879`, `MinimumOSVersion` 17.0). Duration 15m25s. |
 | 11 (v1.1 #1) | `46035577162` | v1.1 Data Safety | `xcode-27` (`iPhone 17e` iOS 27.2) | `2df78d0` | **Success** | `TrackerCoreTests` 34/34 passed, `RUNTests` 11/11 passed (incl. on-disk SwiftData v1->v2 migration & v2 backup), `RUN-1.1.ipa` built (`com.kiddo56.run`, v1.1). Duration 13m33s. |
 | 12 (v1.1 #2) | `46037567122` | v1.1 Change 1 | `xcode-27` | `52b18b6` | **Failed** | `TrackerCoreTests` passed; `FullScreenActivityMapView.swift:200` used `sample.paceSecondsPerMeter` instead of `1.0 / sample.speedMPS`. Fixed in Run #13. |
+| 13 (v1.1 #3) | `46039039743` | v1.1 Change 1+2 | `xcode-27` | `8a35624` | **Failed** | `PhraseComposer.swift` called static `spoken*` helpers without `Self.` inside `mutating` instance methods. Fixed in Run #14. |
